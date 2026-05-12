@@ -1,0 +1,45 @@
+services:
+
+  # ─────────────────────────────────────────────────────────
+  # schema-check
+  # Detecta cambios de esquema en las capas del geoportal.
+  #
+  # Uso rápido:
+  #   docker compose run --rm schema-check
+  #
+  # Opciones disponibles (pasar después de --):
+  #   --layer establecimientos_salud   solo una capa
+  #   --discover                       solo capas pendientes de verificar
+  #   --save-all                       acepta cambios y sobreescribe snapshots
+  #
+  # Ejemplo:
+  #   docker compose run --rm schema-check --layer establecimientos_salud --save-all
+  # ─────────────────────────────────────────────────────────
+  schema-check:
+    build:
+      context: .
+      dockerfile: Dockerfile.tools
+    volumes:
+      # Montar catalog/ para que los snapshots generados queden en el host
+      - ./catalog:/app/catalog
+    working_dir: /app
+    command: python scripts/check_schema_drift.py
+    network_mode: host   # necesario para salir a internet en Linux
+
+  # ─────────────────────────────────────────────────────────
+  # build-er
+  # Genera catalog/er_model.json y catalog/er_model.png
+  # desde los YAMLs del catálogo.
+  #
+  # Uso:
+  #   docker compose run --rm build-er
+  #   docker compose run --rm build-er --format svg
+  # ─────────────────────────────────────────────────────────
+  build-er:
+    build:
+      context: .
+      dockerfile: Dockerfile.tools
+    volumes:
+      - ./catalog:/app/catalog
+    working_dir: /app
+    command: python scripts/build_er_model.py

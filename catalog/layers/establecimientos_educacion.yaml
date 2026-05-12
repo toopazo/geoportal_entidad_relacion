@@ -1,0 +1,107 @@
+# ==============================================================================
+# Capa: Establecimientos de Educación Escolar
+# Organismo: MINEDUC (Ministerio de Educación)
+# Curaduría: stub — columnas pendientes de verificar con DescribeFeatureType
+# ==============================================================================
+
+id: establecimientos_educacion
+name: "Establecimientos de Educación Escolar"
+description: >
+  Catastro de establecimientos educacionales del país — colegios,
+  escuelas, liceos y otras instituciones de enseñanza básica y media.
+  Incluye establecimientos municipales, particulares subvencionados y
+  particulares pagados. Publicado por MINEDUC en el geoportal IDE.
+source: MINEDUC
+organization: "Ministerio de Educación de Chile"
+geoportal_id: 35408
+workspace: null           # pendiente de confirmar con DescribeFeatureType
+typename: null            # pendiente de confirmar
+protocol: WFS
+geometry_type: point
+feature_count: null       # pendiente (~12.000 establecimientos estimados)
+schema_status: pending_verification
+last_reviewed: null
+schema_hash: null
+
+# ------------------------------------------------------------------------------
+# Para qué sirve esta capa
+# ------------------------------------------------------------------------------
+use_cases:
+  - "Distribución territorial de colegios públicos vs privados por comuna"
+  - "Análisis de cobertura educacional junto con datos de población infantil (INE)"
+  - "Cruzar con establecimientos de salud para análisis de infraestructura social por zona"
+  - "Identificar comunas con baja razón de establecimientos por habitante en edad escolar"
+
+# ------------------------------------------------------------------------------
+# Relaciones
+# ------------------------------------------------------------------------------
+relations:
+  - target: dpa_2023
+    join_on: cut_comuna
+    join_type: many_to_one
+    description: "Une cada establecimiento con el polígono comunal para mapas temáticos"
+
+  - target: ine_proyecciones_poblacion
+    join_on: cut_comuna
+    join_type: many_to_one
+    description: "Normaliza establecimientos por población en edad escolar por comuna"
+
+  - target: establecimientos_salud
+    join_on: cut_comuna
+    join_type: many_to_many
+    description: "Análisis combinado de infraestructura social: salud y educación en la misma comuna"
+
+# ------------------------------------------------------------------------------
+# Columnas esperadas (sin verificar — ejecutar check_schema_drift.py)
+# Basado en documentación pública MINEDUC y convenciones del Estado chileno
+# ------------------------------------------------------------------------------
+columns:
+  rbd:
+    type: int
+    human_label: "RBD (Rol Base de Datos)"
+    description: "Identificador único del establecimiento educacional según MINEDUC. Equivalente al cod_vig de salud para el sector educación."
+    is_pk: true
+    is_fk: false
+    schema_status: expected
+    notes: "Clave para cruzar con datos SIMCE, matrícula, y otras estadísticas MINEDUC."
+
+  nom_estab:
+    type: string
+    human_label: "Nombre del establecimiento"
+    schema_status: expected
+    is_pk: false
+    is_fk: false
+
+  cut_com:
+    type: int
+    human_label: "CUT de comuna"
+    description: "Código Único Territorial de la comuna. Puede llamarse cut_com, cut_comuna o cod_com — verificar con DescribeFeatureType."
+    is_pk: false
+    is_fk: true
+    fk_target: dpa_2023.cut_comuna
+    schema_status: expected
+    notes: "El nombre exacto del campo varía entre versiones — confirmar con script."
+
+  dep:
+    type: string
+    human_label: "Dependencia administrativa"
+    description: "Municipal, Particular Subvencionado, Particular Pagado, SLEP, etc."
+    is_pk: false
+    is_fk: false
+    schema_status: expected
+
+  rural_urb:
+    type: string
+    human_label: "Contexto rural/urbano"
+    schema_status: expected
+    is_pk: false
+    is_fk: false
+
+  geom:
+    type: geometry
+    human_label: "Geometría (punto)"
+    description: "Punto geográfico del establecimiento. EPSG:4326."
+    is_pk: false
+    is_fk: false
+    srs: "EPSG:4326"
+    schema_status: expected

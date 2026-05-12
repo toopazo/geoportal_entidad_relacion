@@ -1,0 +1,121 @@
+# ==============================================================================
+# Capa: División Política Administrativa de Chile 2023
+# Organismo: BCN (Biblioteca del Congreso Nacional) / SUBDERE
+# Curaduría: parcial — columnas exactas pendientes de verificar con DescribeFeatureType
+# ==============================================================================
+
+id: dpa_2023
+name: "División Política Administrativa de Chile 2023"
+description: >
+  Polígonos oficiales de las unidades político-administrativas de Chile:
+  16 regiones, 56 provincias y 346 comunas. Es la capa geográfica de
+  referencia para hacer mapas temáticos (coropléticos) sobre cualquier
+  otro dataset del Estado.
+source: "BCN / SUBDERE"
+organization: "Biblioteca del Congreso Nacional y Subsecretaría de Desarrollo Regional"
+geoportal_id: 36391
+workspace: null           # pendiente de confirmar con DescribeFeatureType
+typename: null            # pendiente de confirmar
+protocol: WFS
+geometry_type: polygon    # polígonos de comunas, provincias y regiones
+feature_count: null       # pendiente (346 comunas + 56 provincias + 16 regiones = ~418 si está en una sola capa)
+schema_status: pending_verification
+last_reviewed: null
+schema_hash: null
+
+# ------------------------------------------------------------------------------
+# Para qué sirve esta capa
+# ------------------------------------------------------------------------------
+use_cases:
+  - "Base geográfica para cualquier mapa temático de Chile (coroplético)"
+  - "Colorear comunas según densidad de establecimientos de salud o educación"
+  - "Calcular superficies comunales para normalizar por km²"
+  - "Visualizar la estructura administrativa completa del país"
+
+# ------------------------------------------------------------------------------
+# Relaciones — esta capa es la dimensión territorial central
+# Todos los datasets del Estado chileno se pueden unir aquí vía CUT
+# ------------------------------------------------------------------------------
+relations:
+  - target: establecimientos_salud
+    join_on: cut_comuna
+    join_type: one_to_many
+    description: "Agrega y mapea establecimientos de salud por comuna"
+
+  - target: establecimientos_educacion
+    join_on: cut_comuna
+    join_type: one_to_many
+    description: "Agrega y mapea establecimientos educacionales por comuna"
+
+  - target: ine_proyecciones_poblacion
+    join_on: cut_comuna
+    join_type: one_to_one
+    description: "Enriquece cada polígono comunal con población estimada"
+
+  - target: fonasa_beneficiarios
+    join_on: cut_comuna
+    join_type: one_to_one
+    description: "Enriquece cada polígono comunal con beneficiarios FONASA"
+
+# ------------------------------------------------------------------------------
+# Columnas esperadas (sin verificar — ejecutar check_schema_drift.py)
+# Basado en documentación SUBDERE y comportamiento observado en otras capas
+# ------------------------------------------------------------------------------
+columns:
+  cut_region:
+    type: int
+    human_label: "CUT de región"
+    description: "Código Único Territorial de la región (2 dígitos, 1–16). Estándar SUBDERE."
+    is_pk: false
+    is_fk: false
+    schema_status: expected  # aún no verificado
+
+  cut_provin:
+    type: int
+    human_label: "CUT de provincia"
+    description: "Código Único Territorial de la provincia (3 dígitos)."
+    is_pk: false
+    is_fk: false
+    schema_status: expected
+
+  cut_comuna:
+    type: int
+    human_label: "CUT de comuna"
+    description: >
+      Código Único Territorial de la comuna (5 dígitos). Clave foránea
+      universal del Estado chileno. Permite JOIN con cualquier dataset
+      sectorial (salud, educación, demografía, etc.).
+    is_pk: true
+    is_fk: false
+    example: 13101
+    schema_status: expected
+
+  nom_region:
+    type: string
+    human_label: "Nombre de región"
+    schema_status: expected
+    is_pk: false
+    is_fk: false
+
+  nom_provin:
+    type: string
+    human_label: "Nombre de provincia"
+    schema_status: expected
+    is_pk: false
+    is_fk: false
+
+  nom_comuna:
+    type: string
+    human_label: "Nombre de comuna"
+    schema_status: expected
+    is_pk: false
+    is_fk: false
+
+  geom:
+    type: geometry
+    human_label: "Geometría (polígono)"
+    description: "Polígono del límite comunal/provincial/regional. EPSG:4326."
+    is_pk: false
+    is_fk: false
+    srs: "EPSG:4326"
+    schema_status: expected

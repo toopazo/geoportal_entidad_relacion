@@ -1,0 +1,457 @@
+# ==============================================================================
+# Capa: Establecimientos de Salud de Chile
+# Organismo: MINSAL (Ministerio de Salud)
+# Curaduría: verificada manualmente contra DescribeFeatureType y datos reales
+# ==============================================================================
+
+id: establecimientos_salud
+name: "Establecimientos de Salud de Chile 2025"
+description: >
+  Catastro oficial de todos los establecimientos de salud del país —
+  hospitales, CESFAM, CECOSF, CRS, postas rurales, clínicas, consultorios,
+  etc. — al mes de diciembre 2025. Incluye establecimientos públicos,
+  privados y municipales.
+source: MINSAL
+organization: "Ministerio de Salud de Chile"
+geoportal_id: 36779
+workspace: EstablecimientosdesaluddeChile2025
+typename: "EstablecimientosdesaluddeChile2025:establecimientos_de_salud_diciembre_2025"
+protocol: WFS
+geometry_type: point
+feature_count: 5181
+schema_status: verified   # verified | pending_verification | outdated
+last_reviewed: "2026-05-11"
+schema_hash: null         # rellenado por check_schema_drift.py en primer run
+
+# Versiones conocidas del mismo dataset (workspace cambia por año/mes)
+known_versions:
+  - workspace: EstablecimientosdesaluddeChile2025
+    typename: "EstablecimientosdesaluddeChile2025:establecimientos_de_salud_diciembre_2025"
+    geoportal_id: 36779
+    period: "Diciembre 2025"
+  - workspace: EstablecimientosdesaluddeChile2026
+    typename: null   # inferido, confirmar con DescribeFeatureType
+    geoportal_id: 37171
+    period: "Febrero 2026"
+
+# ------------------------------------------------------------------------------
+# Para qué sirve esta capa
+# ------------------------------------------------------------------------------
+use_cases:
+  - "Cuántos hospitales públicos hay en cada región y cómo se distribuyen"
+  - "Qué comunas no tienen urgencia disponible (campo urgencia='NO')"
+  - "Razón de establecimientos por 100.000 habitantes — cruzar con INE población"
+  - "Comparar cobertura pública vs privada por zona geográfica"
+  - "Identificar brechas de atención primaria (CESFAM) vs población FONASA inscrita"
+
+# ------------------------------------------------------------------------------
+# Relaciones con otras capas/tablas
+# ------------------------------------------------------------------------------
+relations:
+  - target: dpa_2023
+    join_on: cut_comuna
+    join_type: many_to_one
+    description: >
+      Une cada establecimiento con el polígono de su comuna.
+      Permite mapas coropléticos de densidad de establecimientos.
+    cast_note: "cut_comuna llega como string en GeoJSON — castear a int antes del JOIN"
+
+  - target: ine_proyecciones_poblacion
+    join_on: cut_comuna
+    join_type: many_to_one
+    description: >
+      Normaliza el conteo de establecimientos por población comunal.
+      KPI derivado: establecimientos por 100.000 habitantes.
+
+  - target: fonasa_beneficiarios
+    join_on: cut_comuna
+    join_type: many_to_one
+    description: >
+      Estima carga potencial: beneficiarios FONASA por establecimiento
+      público de atención primaria en la misma comuna.
+
+  - target: deis_rem
+    join_on: cod_vig
+    join_type: one_to_many
+    description: >
+      Cruza capacidad instalada (tipo, nivel, complejidad) con
+      producción real mensual (consultas, urgencias, hospitalizaciones).
+    cast_note: "cod_vig es int de 6 dígitos — verificar que el DEIS no tenga ceros iniciales"
+
+  - target: dim_servicio_salud
+    join_on: cod_dep
+    join_type: many_to_one
+    description: >
+      Identifica a qué Servicio de Salud o SEREMI pertenece cada
+      establecimiento. Chile tiene 29 Servicios de Salud.
+
+# ------------------------------------------------------------------------------
+# Columnas
+# Leyenda de campos:
+#   is_pk: identifica unívocamente cada registro en esta tabla
+#   is_fk: es una clave foránea hacia otra tabla
+#   fk_target: tabla.columna de destino del JOIN
+#   truncated: el nombre está cortado por límite de shapefile (10 chars)
+# ------------------------------------------------------------------------------
+columns:
+  id_orig:
+    type: int
+    human_label: "ID interno secuencial"
+    description: "Número secuencial interno de la capa. No tiene significado fuera de este dataset y puede cambiar entre versiones."
+    is_pk: false
+    is_fk: false
+
+  cod_ant:
+    type: string
+    human_label: "Código DEIS antiguo"
+    description: "Código DEIS en formato legacy (ej: '26-001'). Preservado por compatibilidad histórica."
+    is_pk: false
+    is_fk: false
+    notes: "Formato XX-XXX. En desuso; preferir cod_vig para cruces."
+
+  cod_vig:
+    type: int
+    human_label: "Código DEIS vigente"
+    description: "Identificador único del establecimiento según el DEIS (Departamento de Estadísticas e Información de Salud). Estable entre versiones anuales del dataset. Es la clave para cruzar con estadísticas de producción."
+    is_pk: true
+    is_fk: true
+    fk_target: deis_rem.cod_vig
+    example: 126704
+    notes: "6 dígitos. Sin ceros iniciales en esta tabla — verificar al cruzar con archivos DEIS."
+
+  cod_m_ant:
+    type: string
+    human_label: "Código MINSAL antiguo"
+    description: "Código MINSAL en formato anterior. Preservado por compatibilidad."
+    is_pk: false
+    is_fk: false
+
+  cod_m_nuev:
+    type: int
+    human_label: "Código MINSAL nuevo"
+    description: "Código MINSAL en formato actual. Distinto del código DEIS."
+    is_pk: false
+    is_fk: false
+
+  cod_reg:
+    type: int
+    human_label: "Código de región (DPA antiguo)"
+    description: "Código numérico de región según División Político-Administrativa. Equivalente a cut_region para la mayoría de usos."
+    is_pk: false
+    is_fk: true
+    fk_target: dpa_2023.cut_region
+    notes: "Preferir cut_region para JOINs — es el estándar SUBDERE."
+
+  nom_reg:
+    type: string
+    human_label: "Nombre de región"
+    description: "Nombre de la región en texto. Redundante con nom_region — puede tener diferencias de formato entre versiones."
+    is_pk: false
+    is_fk: false
+
+  cod_dep:
+    type: int
+    human_label: "Código del Servicio de Salud / SEREMI"
+    description: "Identifica al organismo MINSAL que administra el establecimiento. Chile tiene 29 Servicios de Salud regionales más SEREMIs."
+    is_pk: false
+    is_fk: true
+    fk_target: dim_servicio_salud.cod_dep
+    example: 26
+
+  dependenc:
+    type: string
+    truncated: true  # nombre completo: dependencia
+    human_label: "Nombre del Servicio de Salud"
+    description: "Nombre del Servicio de Salud o SEREMI a cargo. Texto libre."
+    example: "Servicio de Salud Magallanes"
+    is_pk: false
+    is_fk: false
+
+  pertenenci:
+    type: string
+    truncated: true  # nombre completo: pertenencia
+    human_label: "Pertenencia al SNSS"
+    description: "Indica si el establecimiento pertenece al Sistema Nacional de Servicios de Salud."
+    is_pk: false
+    is_fk: false
+
+  tipo:
+    type: string
+    human_label: "Tipo de establecimiento"
+    description: "Categoría funcional del establecimiento. Determina el nivel de atención y los servicios que ofrece."
+    is_pk: false
+    is_fk: false
+    known_values:
+      - "Hospital"
+      - "CESFAM"        # Centro de Salud Familiar — atención primaria urbana
+      - "CECOSF"        # Centro Comunitario de Salud Familiar
+      - "CRS"           # Centro de Referencia de Salud
+      - "CDT"           # Centro de Diagnóstico y Tratamiento
+      - "Posta Rural"   # atención primaria rural
+      - "Clínica"
+      - "Consultorio General Urbano"
+      - "SAR"           # Servicio de Atención Rural
+      - "SAPU"          # Servicio de Atención Primaria de Urgencia
+
+  ambito:
+    type: string
+    human_label: "Ámbito del establecimiento"
+    description: "Clasifica si el establecimiento opera en ámbito urbano, rural u otro."
+    is_pk: false
+    is_fk: false
+
+  nombre:
+    type: string
+    human_label: "Nombre completo"
+    description: "Nombre oficial del establecimiento."
+    example: "Hospital Comunitario Cristina Calderón de Puerto Williams"
+    is_pk: false
+    is_fk: false
+
+  certifi:
+    type: string
+    human_label: "Certificación"
+    description: "Estado de certificación del establecimiento según normativa MINSAL."
+    is_pk: false
+    is_fk: false
+
+  dep_adm:
+    type: string
+    human_label: "Dependencia administrativa"
+    description: "Quién administra el establecimiento: Servicio de Salud, Municipal, etc. Distinto de 'prestador' que indica público/privado."
+    is_pk: false
+    is_fk: false
+    known_values:
+      - "Servicio de Salud"
+      - "Municipal"
+      - "Privado"
+      - "FFAA y del Orden"
+
+  nivel:
+    type: string
+    human_label: "Nivel de atención"
+    description: "Nivel de complejidad clínica en el sistema de referencia y contrarreferencia."
+    is_pk: false
+    is_fk: false
+    known_values:
+      - "Primario"     # CESFAM, Posta Rural — primer contacto con el sistema
+      - "Secundario"   # CRS, CDT — especialidades ambulatorias
+      - "Terciario"    # Hospitales de alta complejidad
+
+  cod_com:
+    type: int
+    human_label: "Código de comuna (DPA antiguo)"
+    description: "Código de comuna de 5 dígitos según DPA. Para la mayoría de usos preferir cut_comuna."
+    is_pk: false
+    is_fk: true
+    fk_target: dpa_2023.cut_comuna
+    notes: "Preferir cut_comuna para JOINs — es el estándar SUBDERE."
+
+  nom_com:
+    type: string
+    human_label: "Nombre de comuna (campo corto)"
+    description: "Nombre de la comuna en mayúsculas. Puede diferir en formato respecto a nom_comuna."
+    is_pk: false
+    is_fk: false
+
+  via:
+    type: string
+    human_label: "Tipo de vía"
+    description: "Tipo de vía de la dirección: Calle, Avenida, Pasaje, etc."
+    is_pk: false
+    is_fk: false
+
+  numero:
+    type: string
+    human_label: "Número de dirección"
+    description: "Numeración de la dirección. Tipo string porque puede incluir letras (ej: '1234-A')."
+    is_pk: false
+    is_fk: false
+
+  direccion:
+    type: string
+    human_label: "Nombre de la calle"
+    description: "Nombre de la calle o vía de la dirección."
+    is_pk: false
+    is_fk: false
+
+  fono:
+    type: float
+    human_label: "Teléfono"
+    description: "Número de teléfono. Tipo float por herencia del shapefile original — puede tener valores nulos o incorrectos."
+    is_pk: false
+    is_fk: false
+    notes: "Calidad de datos baja — muchos registros nulos o con formato incorrecto."
+
+  f_inicio:
+    type: date
+    human_label: "Fecha de inicio de operaciones"
+    description: "Fecha en que el establecimiento comenzó a funcionar oficialmente."
+    is_pk: false
+    is_fk: false
+
+  urgencia:
+    type: string
+    human_label: "¿Tiene urgencia?"
+    description: "Indica si el establecimiento cuenta con servicio de urgencia."
+    is_pk: false
+    is_fk: false
+    known_values:
+      - "SI"
+      - "NO"
+
+  tipo_urge:
+    type: string
+    human_label: "Tipo de urgencia"
+    description: "Clasifica el tipo de unidad de urgencia cuando el campo urgencia='SI'."
+    is_pk: false
+    is_fk: false
+    known_values:
+      - "UEH"   # Unidad de Emergencia Hospitalaria
+      - "SU"    # Servicio de Urgencia
+      - "SAPU"  # Servicio de Atención Primaria de Urgencia
+      - "SAR"   # Servicio de Atención Rural
+
+  clas_sapu:
+    type: string
+    human_label: "Clasificación SAPU"
+    description: "Categoría del SAPU según normativa MINSAL (cuando aplica)."
+    is_pk: false
+    is_fk: false
+
+  latitud:
+    type: float
+    human_label: "Latitud (WGS84)"
+    description: "Coordenada latitud en grados decimales, sistema de referencia WGS84 (el mismo que Google Maps)."
+    example: -54.93521
+    is_pk: false
+    is_fk: false
+    notes: "Redundante con el campo geom — usar geom para operaciones espaciales en GIS."
+
+  longitud:
+    type: float
+    human_label: "Longitud (WGS84)"
+    description: "Coordenada longitud en grados decimales, sistema de referencia WGS84."
+    example: -67.60039
+    is_pk: false
+    is_fk: false
+
+  prestador:
+    type: string
+    human_label: "Tipo de prestador"
+    description: "Indica si el establecimiento es público, privado o municipal. Campo clave para análisis de cobertura del sistema público."
+    is_pk: false
+    is_fk: false
+    known_values:
+      - "Público"
+      - "Privado"
+      - "Municipal"
+
+  estado:
+    type: string
+    human_label: "Estado operacional"
+    description: "Indica si el establecimiento está activo, en construcción, cerrado, etc."
+    is_pk: false
+    is_fk: false
+
+  complejida:
+    type: string
+    truncated: true  # nombre completo: complejidad
+    human_label: "Complejidad"
+    description: "Nivel de complejidad técnica y de recursos del establecimiento."
+    is_pk: false
+    is_fk: false
+    known_values:
+      - "Alta Complejidad"
+      - "Mediana Complejidad"
+      - "Baja Complejidad"
+
+  tipo_aten:
+    type: string
+    human_label: "Tipo de atención"
+    description: "Clasifica si el establecimiento entrega atención ambulatoria (abierta) u hospitalización (cerrada)."
+    is_pk: false
+    is_fk: false
+    known_values:
+      - "Atención Abierta"
+      - "Atención Cerrada-Hospitalaria"
+      - "Atención Abierta y Cerrada"
+
+  cut_comuna:
+    type: int
+    human_label: "CUT de comuna"
+    description: "Código Único Territorial de la comuna, estándar nacional SUBDERE. 5 dígitos. Es la clave foránea principal para cruzar con cualquier otro dataset del Estado chileno."
+    is_pk: false
+    is_fk: true
+    fk_target: dpa_2023.cut_comuna
+    example: 12201
+    notes: >
+      ADVERTENCIA: llega como string en el GeoJSON a pesar de ser numérico.
+      Siempre castear: df['cut_comuna'] = df['cut_comuna'].astype(int)
+
+  cut_region:
+    type: int
+    human_label: "CUT de región"
+    description: "Código Único Territorial de la región. 2 dígitos (1–16)."
+    is_pk: false
+    is_fk: true
+    fk_target: dpa_2023.cut_region
+    example: 12
+    notes: "También puede llegar como string — castear antes de JOIN."
+
+  cut_provin:
+    type: int
+    truncated: true  # nombre completo: cut_provincia
+    human_label: "CUT de provincia"
+    description: "Código Único Territorial de la provincia. 3 dígitos."
+    is_pk: false
+    is_fk: true
+    fk_target: dpa_2023.cut_provin
+    example: 122
+
+  nom_region:
+    type: string
+    human_label: "Nombre de región"
+    description: "Nombre completo de la región en mayúsculas."
+    example: "REGIÓN DE MAGALLANES Y DE LA ANTÁRTICA CHILENA"
+    is_pk: false
+    is_fk: false
+
+  nom_provin:
+    type: string
+    human_label: "Nombre de provincia"
+    description: "Nombre completo de la provincia en mayúsculas."
+    example: "ANTÁRTICA CHILENA"
+    is_pk: false
+    is_fk: false
+
+  nom_comuna:
+    type: string
+    human_label: "Nombre de comuna"
+    description: "Nombre completo de la comuna en mayúsculas."
+    example: "CABO DE HORNOS"
+    is_pk: false
+    is_fk: false
+    notes: "Para CQL filter usar mayúsculas con tildes: cql_filter=nom_comuna='ÑUÑOA'"
+
+  ir_google:
+    type: string
+    human_label: "Enlace Google Maps"
+    description: "URL directa a Google Maps con la ubicación del establecimiento. Útil para interfaz de usuario."
+    is_pk: false
+    is_fk: false
+
+  simbologia:
+    type: string
+    human_label: "Categoría de simbología"
+    description: "Categoría usada para definir el ícono o color en el mapa del geoportal. No tiene significado analítico."
+    is_pk: false
+    is_fk: false
+
+  geom:
+    type: geometry
+    human_label: "Geometría (punto)"
+    description: "Punto geográfico con la ubicación del establecimiento. Sistema de referencia EPSG:4326 (WGS84). Usar este campo para todas las operaciones espaciales en GIS."
+    is_pk: false
+    is_fk: false
+    srs: "EPSG:4326"
