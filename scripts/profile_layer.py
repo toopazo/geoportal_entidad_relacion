@@ -4,7 +4,8 @@ profile_layer.py
 Perfila las columnas de una tabla cargada en postgres y genera el bloque
 columns: en el YAML con tres campos de descripción:
 
-  human_description  → vacío, lo completa el curador manualmente
+  human_description  → vacío, lo completa el curador manualmente (texto libre)
+  tags               → vocabulario controlado: relevante | fk | geografica
   arcgis_description → alias oficial del Feature Service (solo capas ArcGIS)
   llm_description    → generado por Claude usando el dominio oficial del organismo
 
@@ -286,6 +287,7 @@ def build_columns_yaml(
         if yaml_type == "geometry":
             lines.append(f'    notes: "Columna espacial PostGIS. Usar ST_AsText(geom) para ver coordenadas."')
             lines.append(f"    human_description: \"\"")
+            lines.append(f"    tags: [geografica]")
             lines.append(f"    arcgis_description: null")
             lines.append(f"    llm_description: null")
             continue
@@ -308,6 +310,7 @@ def build_columns_yaml(
                 lines.append(f"      - {_yaml_str(v)}")
 
         lines.append(f"    human_description: \"\"")
+        lines.append(f"    tags: []")
 
         alias = arcgis_aliases.get(name)
         lines.append(f"    arcgis_description: {_yaml_str(alias) if alias else 'null'}")
@@ -400,7 +403,7 @@ def main():
     print(f"OK ({len(domain_content)} chars)")
 
     # 4. Descripciones LLM
-    print("  Generando llm_description con Claude API...", end=" ", flush=True)
+    print("  Generando llm_description con DeepSeek API...", end=" ", flush=True)
     llm_descriptions = get_llm_descriptions(data_cols, profiles, catalog_data, domain_content)
     print(f"OK ({len(llm_descriptions)} descripciones)")
 

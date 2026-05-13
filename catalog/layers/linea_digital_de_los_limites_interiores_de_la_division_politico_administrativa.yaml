@@ -1,0 +1,118 @@
+# ==============================================================================
+# Capa: Línea Digital de los Límites Interiores de la División Político Administrativa
+# Generado automáticamente por scrape_catalog.py — 2026-05-13
+# ==============================================================================
+
+id: linea_digital_de_los_limites_interiores_de_la_division_politico_administrativa
+schema_status: pending_verification   # verified | pending_verification | outdated
+last_reviewed: "2026-05-13"
+schema_hash: null         # rellenado por check_schema_drift.py en primer run
+
+# ------------------------------------------------------------------------------
+# Metadatos del catálogo (verbatim desde geoportal.cl)
+# Fuente: https://geoportal.cl/geoportal/catalog/35410/L%C3%ADnea%20Digital%20de%20los%20L%C3%ADmites%20Interiores%20de%20la%20Divisi%C3%B3n%20Pol%C3%ADtico%20Administrativa
+# ------------------------------------------------------------------------------
+catalog:
+  url: https://geoportal.cl/geoportal/catalog/35410/L%C3%ADnea%20Digital%20de%20los%20L%C3%ADmites%20Interiores%20de%20la%20Divisi%C3%B3n%20Pol%C3%ADtico%20Administrativa
+  identificacion:
+    titulo: Línea Digital de los Límites Interiores de la División Político Administrativa
+    resumen: "La cobertura de Límites de la División Político Administrativa (DPA) digital de Chile, es\
+      \ un archivo de polilíneas, y representa los límites interiores de todo el país.\r\nEste trabajo\
+      \ fue desarrollado por la Subsecretaría de Desarrollo Regional y Administrativa (SUBDERE) en conjunto\
+      \ con el Instituto Geográfico Militar (IGM), y cuyo inicio se remonta al año 2008, formalizado a\
+      \ través de un Convenio entre ambas instituciones, aprobado en Decreto Exento N° 4.763 del año 2013.\r\
+      \nLos límites fueron digitalizados por IGM, usando la cartografía base escala 1:50.000 en formato\
+      \ digital, siguiendo la redacción de las leyes que indican los límites de cada una de las unidades\
+      \ administrativas del país: regiones, provincias y comunas. Subdere visó el trazado digital, comparándolo\
+      \ con el trazado histórico que mantenía esta institución, y corrigiéndolo en los casos necesarios\
+      \ según la ley vigente, trabajo que concluyó en la primera versión de la cobertura en el año 2013.\r\
+      \nDebido al dinamismo del territorio y los cambios que provoca en la cartografía que de él se elabora,\
+      \ Subdere revisa permanentemente la línea de límites interiores, a distintas escalas, corrigiendo\
+      \ la geometría cuando corresponda para ajustarla a la descripción que hace del límite la ley vigente.\r\
+      \nLa versión 7 incluye la revisión de los todos los límites trazados por linderos prediales para\
+      \ las regiones del Libertador General Bernardo O¿Higgins y del Maule, sobre cartografía predial\
+      \ del Centro de Información de Recursos Naturales CIREN. La cobertura de límites cuentan con un\
+      \ error asociado a la digitalización de la carta base digital 1:50.000 del IGM, aun cuando se utilice\
+      \ en algunos casos cartografía de mayor detalle para ubicar los distintos elementos geográficos\
+      \ que utiliza la ley para describir los límites político-administrativos."
+    fecha: '2022-08-16'
+    tipo_fecha: Fecha de Publicación
+    categorias:
+    - Límites y fronteras
+  contacto:
+    organizacion: Subsecretaría de Desarrollo Regional y Administrativo
+    responsable_metadatos: ''
+    email: rodrigo.osorio@subdere.gov.cl
+    telefono: +562 2676 3030
+    url: ''
+    direccion: Teatinos 92, Edificio Moneda Bicentenario.
+    ciudad: Santiago
+    region: Metropolitana de Santiago
+  servicio_mapas:
+    wfs_capabilities: ''
+  descargas:
+  - nombre: Capa
+    url: https://www.geoportal.cl/geoportal/catalog/download/85edbcc7-0462-3441-a152-ecfebd3796e4
+  ambito_espacial:
+    oeste: -108.135
+    este: -64.32
+    sur: -58.683
+    norte: -18.42
+
+# ------------------------------------------------------------------------------
+# Fuente de datos (snapshot estática — no es bodega viva)
+# ------------------------------------------------------------------------------
+source:
+  type: static
+  download_url: https://www.geoportal.cl/geoportal/catalog/download/85edbcc7-0462-3441-a152-ecfebd3796e4
+  format: rar
+  downloaded_at: "2026-05-13"
+geometry_type: null
+feature_count: null
+
+# ------------------------------------------------------------------------------
+# Para qué sirve esta capa — completar manualmente
+# ------------------------------------------------------------------------------
+use_cases: []
+
+# ------------------------------------------------------------------------------
+# Relaciones con otras capas — completar manualmente
+# ------------------------------------------------------------------------------
+relations: []
+
+# ------------------------------------------------------------------------------
+# Columnas — completar durante el curado
+# Leyenda:
+#   is_pk: identifica unívocamente cada registro en esta tabla
+#   is_fk: es una clave foránea hacia otra tabla
+#   fk_target: tabla.columna de destino del JOIN
+#   truncated: nombre cortado por límite shapefile (10 chars)
+#   tags (vocabulario controlado):
+#     relevante  — columna con valor analítico, candidata a mostrar en frontend
+#     fk         — clave foránea para JOIN con otra capa
+#     geografica — coordenada o geometría espacial
+# ------------------------------------------------------------------------------
+columns:
+
+  TIPO:
+    type: string
+    null_pct: 0.0
+    distinct_count: 3
+    known_values:
+      - COMUNAL
+      - PROVINCIAL
+      - REGIONAL
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: null
+    llm_description: "Indica la jerarquía administrativa del límite representado: 'COMUNAL' para límites de comunas, 'PROVINCIAL' para límites de provincias y 'REGIONAL' para límites de regiones."
+    is_pk: false
+    is_fk: false
+
+  geom:
+    type: geometry
+    notes: "Columna espacial PostGIS. Usar ST_AsText(geom) para ver coordenadas."
+    human_description: ""
+    tags: [geografica]
+    arcgis_description: null
+    llm_description: null

@@ -1,6 +1,23 @@
 {
-  "generated_at": "2026-05-13T15:35:10.580595+00:00",
+  "generated_at": "2026-05-13T21:54:07.948350+00:00",
   "nodes": [
+    {
+      "id": "division_politica_administrativa_2023",
+      "name": "division_politica_administrativa_2023",
+      "source": {
+        "type": "static",
+        "download_url": "https://www.geoportal.cl/geoportal/catalog/download/912598ad-ac92-35f6-8045-098f214bd9c2",
+        "format": "shapefile",
+        "downloaded_at": "2026-05-13"
+      },
+      "organization": "",
+      "geoportal_id": null,
+      "geometry_type": "polygon",
+      "feature_count": 345,
+      "schema_status": "verified",
+      "use_cases": [],
+      "is_ghost": false
+    },
     {
       "id": "establecimientos_de_salud_de_chile_febrero_2026",
       "name": "establecimientos_de_salud_de_chile_febrero_2026",
@@ -33,5 +50,27 @@
       "is_ghost": false
     }
   ],
-  "edges": []
+  "edges": [
+    {
+      "from": "establecimientos_de_salud_de_chile_febrero_2026",
+      "to": "division_politica_administrativa_2023",
+      "join_on": "cut_comuna = CUT_COM",
+      "join_type": "many_to_one",
+      "description": ""
+    },
+    {
+      "from": "establecimientos_de_salud_de_chile_febrero_2026",
+      "to": "division_politica_administrativa_2023",
+      "join_on": "cut_provin = CUT_PROV",
+      "join_type": "many_to_one",
+      "description": ""
+    },
+    {
+      "from": "establecimientos_de_salud_de_chile_febrero_2026",
+      "to": "division_politica_administrativa_2023",
+      "join_on": "cut_region = CUT_REG",
+      "join_type": "many_to_one",
+      "description": ""
+    }
+  ]
 }

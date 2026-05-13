@@ -1,0 +1,238 @@
+# ==============================================================================
+# Capa: División Política Administrativa 2023
+# Generado automáticamente por scrape_catalog.py — 2026-05-13
+# ==============================================================================
+
+id: division_politica_administrativa_2023
+schema_status: verified   # verified | pending_verification | outdated
+last_reviewed: "2026-05-13"
+schema_hash: null         # rellenado por check_schema_drift.py en primer run
+
+# ------------------------------------------------------------------------------
+# Metadatos del catálogo (verbatim desde geoportal.cl)
+# Fuente: https://geoportal.cl/geoportal/catalog/36391/Divisi%C3%B3n%20Pol%C3%ADtica%20Administrativa%202023
+# ------------------------------------------------------------------------------
+catalog:
+  url: https://geoportal.cl/geoportal/catalog/36391/Divisi%C3%B3n%20Pol%C3%ADtica%20Administrativa%202023
+  identificacion:
+    titulo: División Política Administrativa 2023
+    resumen: 'Los Límites de la División Política Administrativa (DPA) 2023 de Chile, es un archivo shapefile
+      de polígonos que se enmarca en el Trabajo del Grupo de Trabajo DPA de la IDE Chile, donde participan
+      las siguientes instituciones: Subsecretaría de Desarrollo Regional y Administrativo (SUBDERE), Instituto
+      Geográfico Militar (IGM), la Dirección Nacional de Fronteras y Límites del Estado (DIFROL) e Instituto
+      Nacional de Estadísticas (INE); este trabajo es el resultado de la coordinación de las instituciones
+      participantes para obtener una capa de la División Política del país actualizada, y que resulta
+      de la unión de las capas de límites internacionales de DIFROL, los límites interiores del país de
+      SUBDERE y línea de costa e islas de IGM para todo el país, su sistema de referencia es SIRGAS Chile
+      y su escala de representación es 1:50.000. Cabe mencionar que esta capa no incluye el Territorio
+      Antártico Chileno. Esta cartografía cuenta con la aprobación para su circulación mediante,  resolución
+      exenta de DIFROL. De acuerdo a las disposiciones contenidas en el DFL Nº5 de 1967, DS Nº 566 de
+      1970 y DFL Nº83 de 1979 del Ministerio de Relaciones Exteriores, toda publicación cuya circulación
+      sea autorizada por esta Dirección Nacional, deberá llevar la siguiente leyenda: &amp;amp;amp;amp;quot;Autorizada
+      su circulación por Resolución Nº50 del 2019 de la Dirección Nacional de Fronteras y Límites del
+      Estado&amp;amp;amp;amp;quot;. La edición y circulación de mapas, cartas geográficas u otros impresos
+      y documentos que se refieran o relacionen con los límites y fronteras de Chile, no comprometen,
+      en modo alguno, al Estado de Chile, de acuerdo con el Art. 2º, letra g) del DFL Nº83 de 1979 del
+      Ministerio de Relaciones Exteriores. Cabe considerar que aunque esta cartografía cuenta con la aprobación
+      para la circulación de DIFROL, las publicaciones y productos derivados de ella deben ser revisados
+      y validados de igual manera por DIFROL. Para desplegar esta capa, el usuario debe tener desplegados
+      todos los shapefiles referidos al límite internacional de Chile. La cartografía se entrega separada
+      en 3 shapefiles: comunas, provincias y regiones. No se considera el polígono correspondiente a la
+      comuna Antártica en la región de Magallanes y de la Antártica Chilena.'
+    fecha: '2023-09-29'
+    tipo_fecha: Fecha de Publicación
+    categorias:
+    - Límites y fronteras
+  contacto:
+    organizacion: Subsecretaría de Desarrollo Regional y Administrativo
+    responsable_metadatos: ''
+    email: rodrigo.osorio@subdere.gov.cl
+    telefono: +562 2676 3030
+    url: ''
+    direccion: Teatinos 92, Edificio Moneda Bicentenario.
+    ciudad: Santiago
+    region: Metropolitana de Santiago
+  servicio_mapas:
+    wfs_capabilities: ''
+  descargas:
+  - nombre: Capa
+    url: https://www.geoportal.cl/geoportal/catalog/download/912598ad-ac92-35f6-8045-098f214bd9c2
+  ambito_espacial:
+    oeste: -78.852
+    este: -64.949
+    sur: -58.563
+    norte: -14.457
+
+# ------------------------------------------------------------------------------
+# Fuente de datos (snapshot estática — no es bodega viva)
+# ------------------------------------------------------------------------------
+source:
+  type: static
+  download_url: https://www.geoportal.cl/geoportal/catalog/download/912598ad-ac92-35f6-8045-098f214bd9c2
+  format: shapefile
+  downloaded_at: "2026-05-13"
+geometry_type: polygon
+feature_count: 345
+
+# ------------------------------------------------------------------------------
+# Para qué sirve esta capa — completar manualmente
+# ------------------------------------------------------------------------------
+use_cases: []
+
+# ------------------------------------------------------------------------------
+# Relaciones con otras capas — completar manualmente
+# ------------------------------------------------------------------------------
+relations: []
+
+# ------------------------------------------------------------------------------
+# Columnas — completar durante el curado
+# Leyenda:
+#   is_pk: identifica unívocamente cada registro en esta tabla
+#   is_fk: es una clave foránea hacia otra tabla
+#   fk_target: tabla.columna de destino del JOIN
+#   truncated: nombre cortado por límite shapefile (10 chars)
+#   tags (vocabulario controlado):
+#     relevante  — columna con valor analítico, candidata a mostrar en frontend
+#     fk         — clave foránea para JOIN con otra capa
+#     geografica — coordenada o geometría espacial
+# ------------------------------------------------------------------------------
+columns:
+
+  CUT_REG:
+    type: string
+    null_pct: 0.0
+    distinct_count: 16
+    known_values:
+      - 01
+      - 02
+      - 03
+      - 04
+      - 05
+      - 06
+      - 07
+      - 08
+      - 09
+      - 10
+      - 11
+      - 12
+      - 13
+      - 14
+      - 15
+      - 16
+    human_description: ""
+    tags: [fk]
+    arcgis_description: null
+    llm_description: "Código único territorial de la región de Chile, compuesto por dos dígitos, donde cada valor numérico representa una región específica del país."
+    is_pk: false
+    is_fk: false
+
+  CUT_PROV:
+    type: string
+    null_pct: 0.0
+    distinct_count: 56
+    examples:
+      - 113
+      - 055
+      - 083
+    human_description: ""
+    tags: [fk]
+    arcgis_description: null
+    llm_description: "Código único territorial de la provincia, compuesto por tres dígitos, que permite identificar cada provincia dentro de su respectiva región."
+    is_pk: false
+    is_fk: false
+
+  CUT_COM:
+    type: string
+    null_pct: 0.0
+    distinct_count: 345
+    examples:
+      - 11302
+      - 05503
+      - 08308
+    human_description: ""
+    tags: [fk]
+    arcgis_description: null
+    llm_description: "Código único territorial de la comuna, compuesto por cinco dígitos, que identifica de manera exclusiva cada comuna a nivel nacional."
+    is_pk: true
+    is_fk: false
+
+  REGION:
+    type: string
+    null_pct: 0.0
+    distinct_count: 16
+    known_values:
+      - Antofagasta
+      - Arica y Parinacota
+      - Atacama
+      - Aysén del General Carlos Ibáñez del Campo
+      - Biobío
+      - Coquimbo
+      - La Araucanía
+      - "Libertador General Bernardo O'Higgins"
+      - Los Lagos
+      - Los Ríos
+      - Magallanes y de la Antártica Chilena
+      - Maule
+      - Metropolitana de Santiago
+      - Ñuble
+      - Tarapacá
+      - Valparaíso
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: null
+    llm_description: "Nombre oficial de la región, correspondiente a una de las dieciséis entidades territoriales de primer orden en que se divide administrativamente Chile."
+    is_pk: false
+    is_fk: false
+
+  PROVINCIA:
+    type: string
+    null_pct: 0.0
+    distinct_count: 56
+    examples:
+      - Capitán Prat
+      - Quillota
+      - Biobío
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: null
+    llm_description: "Nombre oficial de la provincia, correspondiente a la subdivisión administrativa de segundo orden dentro de la región."
+    is_pk: false
+    is_fk: false
+
+  COMUNA:
+    type: string
+    null_pct: 0.0
+    distinct_count: 345
+    examples:
+      - "O'Higgins"
+      - Hijuelas
+      - Quilaco
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: null
+    llm_description: "Nombre oficial de la comuna, correspondiente a la unidad administrativa de tercer orden y la más pequeña dentro de la división político-administrativa de Chile."
+    is_pk: false
+    is_fk: false
+
+  SUPERFICIE:
+    type: float
+    null_pct: 0.0
+    distinct_count: 345
+    examples:
+      - 7784.69
+      - 268.12
+      - 1123.97
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: null
+    llm_description: "Área del polígono en kilómetros cuadrados, calculada en el sistema de referencia SIRGAS Chile a escala 1:50.000."
+    is_pk: false
+    is_fk: false
+
+  geom:
+    type: geometry
+    notes: "Columna espacial PostGIS. Usar ST_AsText(geom) para ver coordenadas."
+    human_description: ""
+    tags: [geografica]
+    arcgis_description: null
+    llm_description: null

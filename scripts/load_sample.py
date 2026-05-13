@@ -1,9 +1,9 @@
 """
 load_sample.py
 
-Paso 2 del flujo de curado: descarga N filas de una capa vía WFS (bodega viva)
-y las carga en PostgreSQL + PostGIS. También guarda la muestra como JSON en
-catalog/samples/{layer}/{fecha}.json.
+Paso 2 del flujo de curado: descarga N filas de una capa vía WFS, ArcGIS REST
+o snapshot estática (GeoJSON/Shapefile) y las carga en PostgreSQL + PostGIS.
+También guarda la muestra como JSON en catalog/samples/{layer}/{fecha}.json.
 
 Uso:
   python scripts/load_sample.py --layer establecimientos_salud
@@ -14,9 +14,12 @@ Variables de entorno:
 """
 
 import argparse
+import io
 import json
 import os
 import sys
+import tempfile
+import zipfile
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -60,6 +63,8 @@ def fetch_sample(layer: dict, n: int) -> dict | None:
         return _fetch_wfs(source, n)
     elif source_type == "arcgis_rest":
         return _fetch_arcgis(source, n)
+    elif source_type == "static":
+        return _fetch_static(source, n)
     else:
         print(f"FALLÓ: tipo de fuente desconocido: {repr(source_type)}")
         return None
@@ -76,6 +81,133 @@ def _fetch_wfs(source: dict, n: int) -> dict | None:
     )
     print(f"  Descargando {n} filas desde WFS...", end=" ", flush=True)
     return _get_json(url, total_key="totalFeatures")
+
+
+def _fetch_static(source: dict, n: int) -> dict | None:
+    fmt = source.get("format", "")
+    url = source.get("download_url", "")
+    if fmt == "geojson":
+        return _fetch_static_geojson(url)
+    elif fmt == "shapefile":
+        return _fetch_static_shapefile(url)
+    elif fmt == "rar":
+        return _fetch_static_rar(url)
+    else:
+        print(f"FALLÓ: formato estático no soportado: {repr(fmt)}")
+        return None
+
+
+def _fetch_static_geojson(url: str) -> dict | None:
+    print(f"  Descargando GeoJSON estático...", end=" ", flush=True)
+    try:
+        r = requests.get(url, timeout=120)
+        r.raise_for_status()
+        data = r.json()
+        if data.get("type") != "FeatureCollection":
+            print(f"FALLÓ: tipo inesperado {repr(data.get('type'))}")
+            return None
+        total = len(data.get("features", []))
+        data["totalFeatures"] = total
+        print(f"OK  ({total} features en el archivo)")
+        return data
+    except Exception as e:
+        print(f"FALLÓ: {e}")
+        return None
+
+
+def _fetch_static_shapefile(url: str) -> dict | None:
+    try:
+        import fiona
+    except ImportError:
+        print("FALLÓ: fiona no instalado — ejecuta: pip install fiona")
+        return None
+
+    print(f"  Descargando Shapefile ZIP...", end=" ", flush=True)
+    try:
+        r = requests.get(url, timeout=120)
+        r.raise_for_status()
+    except Exception as e:
+        print(f"FALLÓ: {e}")
+        return None
+    print(f"OK  ({len(r.content) // 1024} KB)")
+
+    print(f"  Leyendo Shapefile...", end=" ", flush=True)
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
+                zf.extractall(tmpdir)
+            shp_files = list(Path(tmpdir).rglob("*.shp"))
+            if not shp_files:
+                print("FALLÓ: no se encontró .shp en el ZIP")
+                return None
+            shp_path = str(shp_files[0])
+            features = []
+            with fiona.open(shp_path) as src:
+                total = len(src)
+                for feat in src:
+                    features.append({
+                        "type": "Feature",
+                        "geometry": dict(feat["geometry"]) if feat["geometry"] else None,
+                        "properties": dict(feat["properties"]),
+                    })
+        print(f"OK  ({total} features en el archivo)")
+        return {
+            "type": "FeatureCollection",
+            "features": features,
+            "totalFeatures": total,
+        }
+    except Exception as e:
+        print(f"FALLÓ: {e}")
+        return None
+
+
+def _fetch_static_rar(url: str) -> dict | None:
+    try:
+        import rarfile
+    except ImportError:
+        print("FALLÓ: rarfile no instalado — ejecuta: pip install rarfile")
+        return None
+
+    print(f"  Descargando RAR...", end=" ", flush=True)
+    try:
+        r = requests.get(url, timeout=120)
+        r.raise_for_status()
+    except Exception as e:
+        print(f"FALLÓ: {e}")
+        return None
+    print(f"OK  ({len(r.content) // 1024} KB)")
+
+    print(f"  Leyendo Shapefile desde RAR...", end=" ", flush=True)
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            rar_path = os.path.join(tmpdir, "archive.rar")
+            with open(rar_path, "wb") as f:
+                f.write(r.content)
+            with rarfile.RarFile(rar_path) as rf:
+                rf.extractall(tmpdir)
+            shp_files = list(Path(tmpdir).rglob("*.shp"))
+            if not shp_files:
+                print("FALLÓ: no se encontró .shp en el RAR")
+                return None
+            import fiona
+            features = []
+            with fiona.open(str(shp_files[0])) as src:
+                total = len(src)
+                for feat in src:
+                    features.append({
+                        "type": "Feature",
+                        "geometry": dict(feat["geometry"]) if feat["geometry"] else None,
+                        "properties": dict(feat["properties"]),
+                    })
+        print(f"OK  ({total} features en el archivo)")
+        return {
+            "type": "FeatureCollection",
+            "features": features,
+            "totalFeatures": total,
+        }
+    except Exception as e:
+        print(f"FALLÓ: {e}")
+        return None
 
 
 def _fetch_arcgis(source: dict, n: int) -> dict | None:
@@ -271,7 +403,7 @@ def main():
     # 4. Preparar esquema de tabla
     sample_props = data["features"][0]["properties"]
     col_defs = build_column_defs(layer, sample_props)
-    geom_pg_type = f"geometry({geom_type}, 4326)" if geom_type else "geometry"
+    geom_pg_type = "geometry(Geometry, 4326)" if geom_type else "geometry"
 
     # 5. Conectar a postgres
     print(f"  Conectando a postgres...", end=" ", flush=True)

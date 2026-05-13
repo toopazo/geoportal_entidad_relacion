@@ -386,10 +386,97 @@ def detect_arcgis(descargas: list, title: str) -> dict:
     }
 
 
+# ── detección static (snapshot descargable) ───────────────────────────────────
+
+_CONTENT_TYPE_TO_FORMAT = {
+    "application/zip":                "shapefile",
+    "application/x-zip-compressed":   "shapefile",
+    "application/geo+json":           "geojson",
+    "application/json":               "geojson",
+    "text/csv":                        "csv",
+    "application/x-rar":              "rar",
+    "application/x-rar-compressed":   "rar",
+    "application/vnd.rar":            "rar",
+}
+
+def _detect_format_from_headers(url: str) -> str | None:
+    try:
+        r = requests.head(url, timeout=TIMEOUT_SECONDS, allow_redirects=True)
+        ct = r.headers.get("content-type", "").split(";")[0].strip().lower()
+        cd = r.headers.get("content-disposition", "").lower()
+        fmt = _CONTENT_TYPE_TO_FORMAT.get(ct)
+        if not fmt:
+            for kw, f in _FORMAT_KEYWORDS.items():
+                if kw in cd:
+                    fmt = f
+                    break
+        if fmt:
+            print(f"  → formato detectado por headers: {fmt}")
+        return fmt
+    except Exception:
+        return None
+
+
+_FORMAT_KEYWORDS = {
+    "geojson": "geojson",
+    "shapefile": "shapefile",
+    "shp": "shapefile",
+    "csv": "csv",
+}
+_FORMAT_PRIORITY = ["geojson", "shapefile", "csv"]
+
+
+def detect_static(descargas: list) -> dict:
+    print("  Fuente detectada: snapshot estática (sin WFS ni ArcGIS)")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    candidates = []
+    for d in descargas:
+        name_lower = d.get("nombre", "").lower()
+        url = d.get("url", "")
+        if not url:
+            continue
+        fmt = next((f for kw, f in _FORMAT_KEYWORDS.items() if kw in name_lower), None)
+        if fmt:
+            candidates.append((fmt, url))
+
+    if not candidates:
+        # Fallback: inspeccionar content-type / content-disposition via HEAD
+        for d in descargas:
+            url = d.get("url", "")
+            if not url:
+                continue
+            fmt = _detect_format_from_headers(url)
+            if fmt:
+                candidates.append((fmt, url))
+                break
+
+    if not candidates:
+        print("  WARN: no se pudo detectar el formato de ninguna descarga")
+        return _pending_source("static")
+
+    priority = {f: i for i, f in enumerate(_FORMAT_PRIORITY)}
+    candidates.sort(key=lambda x: priority.get(x[0], 99))
+
+    chosen_fmt, chosen_url = candidates[0]
+    print(f"  → {chosen_fmt}: {chosen_url}")
+
+    return {
+        "source": {
+            "type": "static",
+            "download_url": chosen_url,
+            "format": chosen_fmt,
+            "downloaded_at": today,
+        },
+        "geometry_type": None,
+        "feature_count": None,
+    }
+
+
 # ── dispatcher ────────────────────────────────────────────────────────────────
 
 def detect_source(catalog_data: dict, title: str) -> dict:
-    svc_url  = catalog_data.get("servicio_mapas", {}).get("wfs_capabilities", "")
+    svc_url   = catalog_data.get("servicio_mapas", {}).get("wfs_capabilities", "")
     descargas = catalog_data.get("descargas", [])
 
     if "geoserver" in svc_url:
@@ -397,8 +484,7 @@ def detect_source(catalog_data: dict, title: str) -> dict:
     if any("arcgis.com" in d.get("url", "") for d in descargas):
         return detect_arcgis(descargas, title)
 
-    print("  WARN: no se detectó WFS ni ArcGIS — fuente queda pendiente")
-    return _pending_source("unknown")
+    return detect_static(descargas)
 
 
 # ── generación del YAML ───────────────────────────────────────────────────────
@@ -421,6 +507,13 @@ def build_yaml(layer_id: str, catalog_data: dict, source_info: dict) -> str:
     count = source_info.get("feature_count")
     count_str = str(count) if count is not None else "null"
 
+    source_type = source_info["source"].get("type", "unknown")
+    source_comment = (
+        "Fuente de datos (snapshot estática — no es bodega viva)"
+        if source_type == "static"
+        else "Fuente de datos (bodega viva)"
+    )
+
     sep = "-" * 78
     return (
         f"# {'=' * 78}\n"
@@ -437,7 +530,7 @@ def build_yaml(layer_id: str, catalog_data: dict, source_info: dict) -> str:
         f"# {sep}\n"
         f"{catalog_yaml}\n"
         f"# {sep}\n"
-        f"# Fuente de datos (bodega viva)\n"
+        f"# {source_comment}\n"
         f"# {sep}\n"
         f"{source_yaml}"
         f"geometry_type: {geom}\n"
@@ -457,6 +550,10 @@ def build_yaml(layer_id: str, catalog_data: dict, source_info: dict) -> str:
         f"#   is_fk: es una clave foránea hacia otra tabla\n"
         f"#   fk_target: tabla.columna de destino del JOIN\n"
         f"#   truncated: nombre cortado por límite shapefile (10 chars)\n"
+        f"#   tags (vocabulario controlado):\n"
+        f"#     relevante  — columna con valor analítico, candidata a mostrar en frontend\n"
+        f"#     fk         — clave foránea para JOIN con otra capa\n"
+        f"#     geografica — coordenada o geometría espacial\n"
         f"# {sep}\n"
         f"columns: {{}}\n"
     )

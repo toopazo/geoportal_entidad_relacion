@@ -5,6 +5,53 @@
 
 ---
 
+## Sesión 2026-05-13 (tarde)
+
+### Qué se discutió
+
+**Campo `tags` con vocabulario controlado.** Se decidió separar `human_description` (texto libre del curador) de un nuevo campo `tags` con vocabulario controlado: `relevante`, `fk`, `geografica`. Se migró el YAML de salud: los "Valiosa" pasaron a `[relevante]`, los "FK" a `[fk]`, y las columnas de coordenadas/geometría a `[geografica]`.
+
+**Soporte para fuentes estáticas (`type: static`).** DPA 2023 no tiene WFS ni ArcGIS — solo descarga directa. Se agregó un tercer tipo de fuente `static` con campos `download_url`, `format`, y `downloaded_at`. El scraper ahora cae a este tipo cuando no detecta WFS ni ArcGIS, con fallback por headers HTTP (`content-type`/`content-disposition`) cuando el nombre de la descarga no tiene keyword reconocible.
+
+**Soporte de formatos: Shapefile ZIP, GeoJSON, RAR.** Se extendió `load_sample.py` para manejar los tres formatos. RAR requiere `rarfile` (Python) + `unrar` (sistema).
+
+**Capa DPA 2023 curada.** `division_politica_administrativa_2023.yaml` verificado: 345 comunas, 7 columnas, `CUT_COM` marcado como `is_pk: true`.
+
+**Campo `relations:` definido.** Se estableció el formato: `target`, `join_on`, `join_type`. Se discutió cuándo colapsar relaciones redundantes vs. mantenerlas todas — conclusión: decisión del curador según semántica, no regla automática. Salud tiene 3 relaciones hacia DPA (por comuna, provincia y región).
+
+**Capa `linea_digital` descartada para joins.** Solo tiene `TIPO` y `geom` — sin identificadores de unidad administrativa. Una línea de límite es compartida por dos unidades, por lo que agregar CUT vía spatial join es ambiguo. La alternativa correcta es derivar las líneas desde los polígonos de DPA con `ST_Boundary()`.
+
+### Qué se construyó
+
+- `catalog/layers/division_politica_administrativa_2023.yaml` — curado y verificado
+- `catalog/layers/linea_digital_de_los_limites_interiores_de_la_division_politico_administrativa.yaml` — cargado, no curado (descartado para joins)
+- `catalog/samples/division_politica_administrativa_2023/` — muestra cargada en postgres
+- `scripts/scrape_catalog.py` — agrega `detect_static()` con fallback por headers HTTP; detecta GeoJSON, Shapefile, CSV y RAR
+- `scripts/load_sample.py` — agrega `_fetch_static()` con handlers para geojson, shapefile, rar; geometría declarada como `geometry(Geometry, 4326)` para tolerar tipos mixtos
+- `scripts/profile_layer.py` — corrige mensaje "Claude API" → "DeepSeek API"; agrega `tags: []` en stubs nuevos
+- `scripts/requirements.txt` — agrega `fiona>=1.9` y `rarfile>=4.0`
+- `catalog/er_model.png` y `er_model.json` — regenerados con 3 relaciones salud → DPA
+
+### Decisiones tomadas
+
+| Decisión | Razonamiento |
+|---|---|
+| `tags` vocabulario controlado: `relevante`, `fk`, `geografica` | Filtrable programáticamente; `human_description` queda libre para notas del curador |
+| `type: static` con `downloaded_at` | Deja explícito que es snapshot fechada, no bodega viva |
+| `geometry(Geometry, 4326)` en DDL | Tolerante a tipos mixtos (Polygon + MultiPolygon) |
+| 3 relaciones salud → DPA | Cada FK es semánticamente independiente; colapsar es decisión del curador |
+| `linea_digital` no curada | Sin identificadores de unidad; redundante con ST_Boundary() sobre polígonos DPA |
+
+### Próximos pasos
+
+- [ ] Curar `linea_digital` o descartarla del catálogo definitivamente
+- [ ] Correr `make scrape` para `establecimientos_educacion` (ID: 35408)
+- [ ] Curar `resultados_censo_de_poblacion_y_vivienda_2024.yaml` (ArcGIS — flujo pendiente)
+- [ ] Definir `use_cases:` en capas verificadas
+- [ ] Empezar backend FastAPI
+
+---
+
 ## Sesión 2026-05-13
 
 ### Qué se discutió
