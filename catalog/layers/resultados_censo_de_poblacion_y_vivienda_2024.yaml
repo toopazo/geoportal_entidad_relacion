@@ -1,0 +1,76 @@
+# ==============================================================================
+# Capa: Resultados Censo de Población y Vivienda 2024
+# Generado automáticamente por scrape_catalog.py — 2026-05-13
+# ==============================================================================
+
+id: resultados_censo_de_poblacion_y_vivienda_2024
+schema_status: pending_verification   # verified | pending_verification | outdated
+last_reviewed: "2026-05-13"
+schema_hash: null         # rellenado por check_schema_drift.py en primer run
+
+# ------------------------------------------------------------------------------
+# Metadatos del catálogo (verbatim desde geoportal.cl)
+# Fuente: https://geoportal.cl/geoportal/catalog/36568/Resultados%20Censo%20de%20Poblaci%C3%B3n%20y%20Vivienda%202024
+# ------------------------------------------------------------------------------
+catalog:
+  url: https://geoportal.cl/geoportal/catalog/36568/Resultados%20Censo%20de%20Poblaci%C3%B3n%20y%20Vivienda%202024
+  identificacion:
+    titulo: Resultados Censo de Población y Vivienda 2024
+    resumen: En estos visualizadores encontrará los principales indicadores de resultados del Censo de
+      Población y Viviendas 2024 a nivel geográfico.
+    fecha: '2025-03-27'
+    tipo_fecha: Fecha de Publicación
+    categorias:
+    - Sociedad
+  contacto:
+    organizacion: Instituto Nacional de Estadísticas
+    responsable_metadatos: ''
+    email: ine@ine.gob.cl
+    telefono: 562 3246 1010
+    url: ''
+    direccion: Morandé 801
+    ciudad: Santiago
+    region: Metropolitana de Santiago
+  servicio_mapas:
+    wfs_capabilities: ''
+  descargas:
+  - nombre: Sitio web principal
+    url: https://censo2024.ine.gob.cl/
+  - nombre: Dashboard resultados
+    url: https://censo2024.ine.gob.cl/resultados/
+  - nombre: Geoportal - Visualizador Geográfico de resultados
+    url: https://ine-chile.maps.arcgis.com/apps/dashboards/8371bf98e20546b6805bbcce2381c987
+  ambito_espacial:
+    oeste: -82.971
+    este: -61.063
+    sur: -56.315
+    norte: -16.052
+
+# ------------------------------------------------------------------------------
+# Fuente de datos (bodega viva)
+# ------------------------------------------------------------------------------
+source:
+  type: arcgis_rest
+  _status: pendiente — completar manualmente
+geometry_type: null
+feature_count: null
+
+# ------------------------------------------------------------------------------
+# Para qué sirve esta capa — completar manualmente
+# ------------------------------------------------------------------------------
+use_cases: []
+
+# ------------------------------------------------------------------------------
+# Relaciones con otras capas — completar manualmente
+# ------------------------------------------------------------------------------
+relations: []
+
+# ------------------------------------------------------------------------------
+# Columnas — completar durante el curado
+# Leyenda:
+#   is_pk: identifica unívocamente cada registro en esta tabla
+#   is_fk: es una clave foránea hacia otra tabla
+#   fk_target: tabla.columna de destino del JOIN
+#   truncated: nombre cortado por límite shapefile (10 chars)
+# ------------------------------------------------------------------------------
+columns: {}

@@ -56,6 +56,64 @@ def load_layer_yamls(layer_id: str | None) -> list[dict]:
     return layers
 
 
+GEOJSON_GEOMETRY_TYPES = {
+    "Point", "MultiPoint", "LineString", "MultiLineString",
+    "Polygon", "MultiPolygon", "GeometryCollection",
+}
+
+
+def fetch_geojson_sample(workspace: str, typename: str, n: int = 3) -> dict | None:
+    """Descarga n features vía WFS GetFeature y devuelve el JSON parseado."""
+    url = (
+        f"{GEOSERVER_BASE}/{workspace}/wfs"
+        f"?service=WFS&version=1.0.0&request=GetFeature"
+        f"&typeName={typename}&maxFeatures={n}&outputFormat=application/json"
+    )
+    try:
+        r = requests.get(url, timeout=TIMEOUT_SECONDS)
+        r.raise_for_status()
+        return r.json()
+    except requests.exceptions.Timeout:
+        print(f"  ERROR: timeout al contactar {url}")
+    except requests.exceptions.HTTPError as e:
+        print(f"  ERROR HTTP {e.response.status_code}: {url}")
+    except requests.exceptions.ConnectionError:
+        print(f"  ERROR: no se pudo conectar a {url}")
+    except ValueError:
+        print("  ERROR: la respuesta no es JSON válido")
+    return None
+
+
+def validate_geojson(data: dict) -> tuple[bool, str]:
+    """
+    Valida que data sea un GeoJSON FeatureCollection válido (RFC 7946).
+    Retorna (True, "") si es válido, (False, motivo) si no.
+    """
+    if not isinstance(data, dict):
+        return False, "la respuesta no es un objeto JSON"
+    if data.get("type") != "FeatureCollection":
+        return False, f"type={repr(data.get('type'))} — se esperaba 'FeatureCollection'"
+    features = data.get("features")
+    if not isinstance(features, list):
+        return False, "el campo 'features' no es una lista"
+    if not features:
+        return False, "la capa no devolvió ningún feature (¿typename incorrecto?)"
+    for i, f in enumerate(features):
+        if not isinstance(f, dict):
+            return False, f"feature[{i}] no es un objeto"
+        if f.get("type") != "Feature":
+            return False, f"feature[{i}].type={repr(f.get('type'))} — se esperaba 'Feature'"
+        if "properties" not in f or not isinstance(f["properties"], dict):
+            return False, f"feature[{i}] no tiene 'properties' como objeto"
+        geom = f.get("geometry")
+        if geom is not None:
+            if not isinstance(geom, dict):
+                return False, f"feature[{i}].geometry no es un objeto"
+            if geom.get("type") not in GEOJSON_GEOMETRY_TYPES:
+                return False, f"feature[{i}].geometry.type={repr(geom.get('type'))} no es un tipo GeoJSON válido"
+    return True, ""
+
+
 def fetch_describe_feature_type(workspace: str, typename: str) -> str | None:
     url = (
         f"{GEOSERVER_BASE}/{workspace}/wfs"
@@ -109,12 +167,38 @@ def load_snapshot(layer_id: str) -> dict | None:
     return None
 
 
-def save_snapshot(layer_id: str, workspace: str, typename: str, columns: dict[str, str]) -> None:
+def fetch_arcgis_schema(service_url: str, layer_id: int) -> dict[str, str] | None:
+    """Obtiene el esquema de un ArcGIS Feature Service layer como {nombre: tipo}."""
+    url = f"{service_url}/{layer_id}?f=json"
+    try:
+        r = requests.get(url, timeout=TIMEOUT_SECONDS)
+        r.raise_for_status()
+        data = r.json()
+        return {
+            f["name"]: f["type"].replace("esriFieldType", "").lower()
+            for f in data.get("fields", [])
+            if f["name"] not in ("Shape__Area", "Shape__Length")
+        }
+    except Exception as e:
+        print(f"  ERROR: {e}")
+        return None
+
+
+def fetch_arcgis_sample(service_url: str, layer_id: int) -> dict | None:
+    url = f"{service_url}/{layer_id}/query?where=1=1&outFields=*&resultRecordCount=3&returnGeometry=true&f=geojson"
+    try:
+        r = requests.get(url, timeout=TIMEOUT_SECONDS)
+        r.raise_for_status()
+        return r.json()
+    except Exception:
+        return None
+
+
+def save_snapshot(layer_id: str, source_ref: str, columns: dict[str, str]) -> None:
     SNAPSHOTS_DIR.mkdir(parents=True, exist_ok=True)
     snapshot = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "workspace": workspace,
-        "typename": typename,
+        "source_ref": source_ref,
         "hash": schema_hash(columns),
         "columns": dict(sorted(columns.items())),
     }
@@ -143,31 +227,85 @@ def yaml_columns(layer: dict) -> set[str]:
 def check_layer(layer: dict, force_save: bool) -> bool:
     """Retorna True si no hubo errores."""
     layer_id = layer.get("id", layer["_file"].stem)
-    workspace = layer.get("workspace")
-    typename = layer.get("typename")
+    source = layer.get("source", {})
+    source_type = source.get("type")
     status = layer.get("schema_status", "pending_verification")
 
     print(f"\n{'='*60}")
-    print(f"Capa: {layer_id}  [{status}]")
+    print(f"Capa: {layer_id}  [{status}]  fuente: {source_type or 'no definida'}")
 
-    if not workspace or not typename:
-        print("  SALTAR: workspace o typename no definidos (pendiente de descubrimiento manual)")
+    if not source_type:
+        print("  SALTAR: bloque 'source' no definido")
         return True
 
-    print(f"  Workspace : {workspace}")
-    print(f"  TypeName  : {typename}")
-    print("  Consultando DescribeFeatureType...", end=" ", flush=True)
+    # ── WFS ──────────────────────────────────────────────────────────────────
+    if source_type == "wfs":
+        workspace = source.get("workspace")
+        typename = source.get("typename")
+        if not workspace or not typename:
+            print("  SALTAR: workspace o typename no definidos")
+            return True
 
-    xsd_text = fetch_describe_feature_type(workspace, typename)
-    if xsd_text is None:
-        print("FALLÓ")
-        return False
+        print(f"  Workspace : {workspace}")
+        print(f"  TypeName  : {typename}")
 
-    live_columns = parse_xsd_columns(xsd_text)
-    if not live_columns:
-        print("FALLÓ (no se encontraron columnas en el XSD)")
-        print("  Revisa que el typename sea correcto.")
-        return False
+        print("  Validando GeoJSON...", end=" ", flush=True)
+        sample = fetch_geojson_sample(workspace, typename)
+        if sample is None:
+            print("FALLÓ (no se pudo descargar muestra)")
+            return False
+        is_valid, reason = validate_geojson(sample)
+        if not is_valid:
+            print(f"FALLÓ — {reason}")
+            return False
+        geom_type = sample["features"][0].get("geometry", {}).get("type", "desconocida")
+        print(f"OK  (FeatureCollection · geometría={geom_type})")
+
+        print("  Consultando DescribeFeatureType...", end=" ", flush=True)
+        xsd_text = fetch_describe_feature_type(workspace, typename)
+        if xsd_text is None:
+            print("FALLÓ")
+            return False
+        live_columns = parse_xsd_columns(xsd_text)
+        if not live_columns:
+            print("FALLÓ (no se encontraron columnas en el XSD)")
+            return False
+        source_ref = f"wfs:{typename}"
+
+    # ── ArcGIS REST ──────────────────────────────────────────────────────────
+    elif source_type == "arcgis_rest":
+        service_url = source.get("service_url")
+        layer_id_arcgis = source.get("layer_id")
+        layer_name = source.get("layer_name", f"layer_{layer_id_arcgis}")
+        if not service_url or layer_id_arcgis is None:
+            print("  SALTAR: service_url o layer_id no definidos")
+            return True
+
+        print(f"  Service URL : {service_url}")
+        print(f"  Layer       : [{layer_id_arcgis}] {layer_name}")
+
+        print("  Validando GeoJSON...", end=" ", flush=True)
+        sample = fetch_arcgis_sample(service_url, layer_id_arcgis)
+        if sample is None:
+            print("FALLÓ (no se pudo descargar muestra)")
+            return False
+        is_valid, reason = validate_geojson(sample)
+        if not is_valid:
+            print(f"FALLÓ — {reason}")
+            return False
+        geom_type = sample["features"][0].get("geometry", {}).get("type", "desconocida")
+        print(f"OK  (FeatureCollection · geometría={geom_type})")
+
+        print("  Consultando esquema ArcGIS...", end=" ", flush=True)
+        live_columns = fetch_arcgis_schema(service_url, layer_id_arcgis)
+        if not live_columns:
+            print("FALLÓ")
+            return False
+        source_ref = f"arcgis:{service_url}/{layer_id_arcgis}"
+
+    else:
+        print(f"  SALTAR: tipo de fuente desconocido: {repr(source_type)}")
+        return True
 
     live_hash = schema_hash(live_columns)
     print(f"OK  ({len(live_columns)} columnas, hash={live_hash})")
@@ -185,7 +323,7 @@ def check_layer(layer: dict, force_save: bool) -> bool:
 
     if snapshot is None:
         print("  Sin snapshot previo — guardando estado actual.")
-        save_snapshot(layer_id, workspace, typename, live_columns)
+        save_snapshot(layer_id, source_ref, live_columns)
         _report_yaml_gaps(layer, live_columns)
         return True
 
@@ -214,7 +352,7 @@ def check_layer(layer: dict, force_save: bool) -> bool:
             print(f"    ~ {col:<30} {change['before']} → {change['after']}  ← revisar cast")
 
     if force_save:
-        save_snapshot(layer_id, workspace, typename, live_columns)
+        save_snapshot(layer_id, source_ref, live_columns)
         print("\n  Snapshot actualizado (--save-all).")
     else:
         print("\n  Snapshot NO actualizado. Revisa los cambios y corre con --save-all para aceptarlos.")

@@ -1,0 +1,768 @@
+# ==============================================================================
+# Capa: Establecimientos de salud de Chile Febrero 2026
+# Generado automáticamente por scrape_catalog.py — 2026-05-13
+# ==============================================================================
+
+id: establecimientos_de_salud_de_chile_febrero_2026
+schema_status: verified   # verified | pending_verification | outdated
+last_reviewed: "2026-05-13"
+schema_hash: null         # rellenado por check_schema_drift.py en primer run
+
+# ------------------------------------------------------------------------------
+# Metadatos del catálogo (verbatim desde geoportal.cl)
+# Fuente: https://geoportal.cl/geoportal/catalog/37171/Establecimientos%20de%20salud%20de%20Chile%20Febrero%202026
+# ------------------------------------------------------------------------------
+catalog:
+  url: https://geoportal.cl/geoportal/catalog/37171/Establecimientos%20de%20salud%20de%20Chile%20Febrero%202026
+  identificacion:
+    titulo: Establecimientos de salud de Chile Febrero 2026
+    resumen: 'La capa contiene la ubicación de los establecimientos de salud del país que, al 12 de febrero
+      de 2026, se encuentran registrados oficialmente por el Ministerio de Salud como vigentes y abiertos
+      (n=5.159). Lo anterior excluye aquellos establecimientos de salud que se encuentran cerrados. Estos
+      datos fueron generados por el Departamento de Estadísticas e Información de Salud (DEIS), perteneciente
+      a la División de Planificación Sanitaria de la Subsecretaría de Salud Pública. Para su confección,
+      se utilizaron las direcciones oficiales de los establecimientos. La georreferenciación de los establecimientos
+      de Atención Primaria de Salud (APS) estuvo a cargo del Departamento de Desarrollo e Integración
+      en APS de la  División de Atención Primaria perteneciente a la Subsecretaría de Redes Asistenciales.
+      La georreferenciación de los restantes establecimientos estuvo a cargo del Departamento de Inteligencia
+      Epidémica de la División de Emergencias Sanitarias perteneciente al Gabinete de Ministra de Salud.
+      En caso de contar observaciones sobre la información presentada, se solicita escribir a ideminsal@minsal.cl.
+      Escala 1:20.000.000 y SRC: 4326 WGS84 - Coordenadas Geográficas.'
+    fecha: '2026-02-12'
+    tipo_fecha: Fecha de Publicación
+    categorias:
+    - Salud
+  contacto:
+    organizacion: Ministerio de Salud
+    responsable_metadatos: Ministerio de Salud
+    email: ideminsal@minsal.cl
+    telefono: +562 2574 0734
+    url: https://www.minsal.cl/
+    direccion: Mac Iver 541 Piso 6
+    ciudad: Santiago
+    region: Metropolitana de Santiago
+  servicio_mapas:
+    wfs_capabilities: https://geoportal.cl/geoserver/EstablecimientosdesaluddeChile2026/wfs?request=GetCapabilities
+  descargas:
+  - nombre: Shapefile
+    url: https://geoportal.cl/minsal/catalog/download/f1b6e90b-d532-3e80-86df-2b3b3ffd596a
+  - nombre: GeoJSON
+    url: https://geoportal.cl/minsal/catalog/download/b3098cf8-6b33-3552-a027-c7602f460cd8
+  ambito_espacial:
+    oeste: -78.896
+    este: -56.967
+    sur: -59.231
+    norte: -15.373
+
+# ------------------------------------------------------------------------------
+# Fuente de datos (bodega viva)
+# ------------------------------------------------------------------------------
+source:
+  type: wfs
+  workspace: EstablecimientosdesaluddeChile2026
+  typename: EstablecimientosdesaluddeChile2026:establecimientos_de_salud_febrero_2026
+geometry_type: point
+feature_count: 5159
+
+# ------------------------------------------------------------------------------
+# Para qué sirve esta capa — completar manualmente
+# ------------------------------------------------------------------------------
+use_cases: []
+
+# ------------------------------------------------------------------------------
+# Relaciones con otras capas — completar manualmente
+# ------------------------------------------------------------------------------
+relations: []
+
+# ------------------------------------------------------------------------------
+# Columnas — completar durante el curado
+# Leyenda:
+#   is_pk: identifica unívocamente cada registro en esta tabla
+#   is_fk: es una clave foránea hacia otra tabla
+#   fk_target: tabla.columna de destino del JOIN
+#   truncated: nombre cortado por límite shapefile (10 chars)
+# ------------------------------------------------------------------------------
+columns:
+
+  cod_ant:
+    type: string
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - "26-704"
+      - "26-204"
+      - "26-412"
+    human_description: ""
+    arcgis_description: null
+    llm_description: "Código alfanumérico antiguo del establecimiento, con formato separado por guión, heredado de sistemas previos del DEIS."
+    is_pk: false
+    is_fk: false
+
+  cod_vig:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 126704
+      - 126204
+      - 126412
+    human_description: ""
+    arcgis_description: null
+    llm_description: "Código numérico vigente del establecimiento, utilizado actualmente en los registros oficiales del Ministerio de Salud."
+    is_pk: false
+    is_fk: false
+
+  cod_m_ant:
+    type: string
+    null_pct: 84.0
+    distinct_count: 8
+    known_values:
+      - "25-010"
+      - "25-101"
+      - "25-301"
+      - "26-010"
+      - "26-300"
+      - "26-301"
+      - "26-302"
+      - "26-303"
+    human_description: ""
+    arcgis_description: null
+    llm_description: "Código alfanumérico antiguo de la comuna, que identifica geográficamente la ubicación del establecimiento en versiones previas."
+    is_pk: false
+    is_fk: false
+
+  cod_m_nuev:
+    type: float
+    null_pct: 0.0
+    distinct_count: 9
+    known_values:
+      - 0.0
+      - 125010.0
+      - 125101.0
+      - 125301.0
+      - 126010.0
+      - 126300.0
+      - 126301.0
+      - 126302.0
+      - 126303.0
+    human_description: ""
+    arcgis_description: null
+    llm_description: "Código numérico actualizado de la comuna, correspondiente a la división político-administrativa oficial utilizada por el DEIS."
+    is_pk: false
+    is_fk: false
+
+  cod_reg:
+    type: int
+    null_pct: 0.0
+    distinct_count: 4
+    known_values:
+      - 8
+      - 11
+      - 12
+      - 13
+    human_description: ""
+    arcgis_description: null
+    llm_description: "Código numérico de la región donde se ubica el establecimiento, basado en la codificación oficial del Ministerio de Salud."
+    is_pk: false
+    is_fk: false
+
+  nom_reg:
+    type: string
+    null_pct: 0.0
+    distinct_count: 4
+    known_values:
+      - Región de Aysén del General Carlos Ibañez del Campo
+      - Región del Bíobío
+      - Región de Magallanes y de la Antártica Chilena
+      - Región Metropolitana de Santiago
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Nombre completo de la región, según la nomenclatura oficial del Gobierno de Chile."
+    is_pk: false
+    is_fk: false
+
+  cod_dep:
+    type: int
+    null_pct: 0.0
+    distinct_count: 6
+    known_values:
+      - 8
+      - 11
+      - 12
+      - 13
+      - 25
+      - 26
+    human_description: ""
+    arcgis_description: null
+    llm_description: "Código numérico del departamento o servicio de salud responsable del establecimiento, usado en la gestión administrativa sanitaria."
+    is_pk: false
+    is_fk: false
+
+  dependenc:
+    type: string
+    null_pct: 0.0
+    distinct_count: 6
+    known_values:
+      - SEREMI de Aysén del General Carlos Ibáñez del Campo
+      - SEREMI del Biobío
+      - SEREMI de Magallanes y la Antártica Chilena
+      - SEREMI Metropolitana de Santiago
+      - Servicio de Salud Aysén
+      - Servicio de Salud Magallanes
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Nombre de la entidad dependiente del Ministerio de Salud que administra el establecimiento, ya sea SEREMI o Servicio de Salud correspondiente."
+    is_pk: false
+    is_fk: false
+
+  pertenenci:
+    type: string
+    null_pct: 0.0
+    distinct_count: 2
+    known_values:
+      - No perteneciente al Sistema Nacional de Servicios de Salud
+      - Perteneciente al Sistema Nacional de Servicios de Salud
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Indica si el establecimiento pertenece o no al Sistema Nacional de Servicios de Salud, según clasificación oficial."
+    is_pk: false
+    is_fk: false
+
+  tipo:
+    type: string
+    null_pct: 0.0
+    distinct_count: 18
+    known_values:
+      - Centro Comunitario de Salud Familiar (CECOSF)
+      - Centro Comunitario de Salud Mental  (COSAM)
+      - Centro de Salud Familiar (CESFAM)
+      - Centro de Salud Privado
+      - Clínica
+      - Clínica Dental
+      - Consultorio General Urbano  (CGU)
+      - Dirección Servicio de Salud
+      - Hospital
+      - Laboratorio Clínico
+      - Oficina Sanitaria
+      - Posta de Salud Rural (PSR)
+      - Programa de Reparación y Atención Integral de Salud (PRAIS)
+      - Servicio de Atención Primaria de Urgencia de Alta Resolutividad (SAR)
+      - Servicio de Atención Primaria de Urgencia (SAPU)
+      - Unidad de Procedimientos Móvil
+      - Unidad de Salud Funcionarios
+      - Vacunatorio
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Categoría del establecimiento según su función y nivel de atención, como hospital, consultorio, centro comunitario, vacunatorio, entre otros."
+    is_pk: false
+    is_fk: false
+
+  ambito:
+    type: string
+    null_pct: 0.0
+    distinct_count: 3
+    known_values:
+      - Establecimiento de Salud
+      - Programa de Atención
+      - Unidad de Atención
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Clasificación del establecimiento en Establecimiento de Salud, Programa de Atención o Unidad de Atención, según su naturaleza operativa."
+    is_pk: false
+    is_fk: false
+
+  nombre:
+    type: string
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - Hospital Comunitario Cristina Calderón de Puerto Williams
+      - Hospital Naval (Puerto Williams)
+      - Posta de Salud Rural Cameron
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Nombre oficial registrado del establecimiento de salud, tal como aparece en los registros del Ministerio de Salud."
+    is_pk: false
+    is_fk: false
+
+  certifi:
+    type: string
+    null_pct: 0.0
+    distinct_count: 3
+    known_values:
+      - Autogestionado en Red ( EAR)
+      - Certificado como CESFAM
+      - No Aplica
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Tipo de certificación del establecimiento, pudiendo ser Autogestionado en Red, Certificado como CESFAM o No Aplica."
+    is_pk: false
+    is_fk: false
+
+  dep_adm:
+    type: string
+    null_pct: 0.0
+    distinct_count: 5
+    known_values:
+      - Fuerzas Armadas y de Orden (FFAA)
+      - Municipal
+      - Privado
+      - SEREMI de Salud
+      - Servicio de Salud
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Tipo de dependencia administrativa del establecimiento, como Municipal, Servicio de Salud, Privado, FFAA o SEREMI de Salud."
+    is_pk: false
+    is_fk: false
+
+  nivel:
+    type: string
+    null_pct: 0.0
+    distinct_count: 4
+    known_values:
+      - No Aplica
+      - Primario
+      - Secundario
+      - Terciario
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Nivel de atención que brinda el establecimiento, clasificado como Primario, Secundario, Terciario o No Aplica."
+    is_pk: false
+    is_fk: false
+
+  cod_com:
+    type: string
+    null_pct: 0.0
+    distinct_count: 18
+    known_values:
+      - 08301
+      - 11101
+      - 11201
+      - 11301
+      - 11302
+      - 11303
+      - 11401
+      - 11402
+      - 12101
+      - 12102
+      - 12103
+      - 12104
+      - 12201
+      - 12301
+      - 12303
+      - 12401
+      - 12402
+      - 13201
+    human_description: ""
+    arcgis_description: null
+    llm_description: "Código alfanumérico de la comuna asignado por el INE u oficina estadística, utilizado para identificación territorial."
+    is_pk: false
+    is_fk: false
+
+  nom_com:
+    type: string
+    null_pct: 0.0
+    distinct_count: 18
+    known_values:
+      - Aisén
+      - Cabo de Hornos
+      - Chile Chico
+      - Cochrane
+      - Coyhaique
+      - Laguna Blanca
+      - Los Ángeles
+      - Natales
+      - "O'Higgins"
+      - Porvenir
+      - Puente Alto
+      - Punta Arenas
+      - Río Ibáñez
+      - Río Verde
+      - San Gregorio
+      - Timaukel
+      - Torres del Paine
+      - Tortel
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Nombre oficial de la comuna donde se localiza el establecimiento, según la división político-administrativa chilena."
+    is_pk: false
+    is_fk: false
+
+  via:
+    type: string
+    null_pct: 0.0
+    distinct_count: 2
+    known_values:
+      - Avenida
+      - Calle
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Tipo de vía pública donde se ubica el establecimiento, especificando si es Avenida o Calle."
+    is_pk: false
+    is_fk: false
+
+  numero:
+    type: int
+    null_pct: 0.0
+    distinct_count: 50
+    examples:
+      - 246
+      - 56
+      - 0
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Número de la dirección del establecimiento en la vía correspondiente, pudiendo ser cero si no aplica."
+    is_pk: false
+    is_fk: false
+
+  direccion:
+    type: string
+    null_pct: 0.0
+    distinct_count: 78
+    examples:
+      - "O'Higgins"
+      - "Mc Intyre, Puerto Williams"
+      - Caserío de Camerón
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Nombre de la vía o localidad donde se encuentra el establecimiento, complementando la dirección oficial."
+    is_pk: false
+    is_fk: false
+
+  fono:
+    type: int
+    null_pct: 0.0
+    distinct_count: 65
+    examples:
+      - 612453636
+      - 612624328
+      - 74613302
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Número de teléfono de contacto del establecimiento, registrado en los sistemas del Ministerio de Salud."
+    is_pk: false
+    is_fk: false
+
+  f_inicio:
+    type: int
+    null_pct: 0.0
+    distinct_count: 28
+    examples:
+      - 42314
+      - 38716
+      - 38716
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Fecha de inicio de actividades del establecimiento, expresada como número de serie de días desde una fecha base (formato Excel)."
+    is_pk: false
+    is_fk: false
+
+  urgencia:
+    type: string
+    null_pct: 0.0
+    distinct_count: 3
+    known_values:
+      - No
+      - NO
+      - SI
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Indicador de si el establecimiento cuenta con servicio de urgencia, con valores Sí o No."
+    is_pk: false
+    is_fk: false
+
+  tipo_urge:
+    type: string
+    null_pct: 0.0
+    distinct_count: 4
+    known_values:
+      - No Aplica
+      - Urgencia Ambulatoria (SAPU)
+      - Urgencia Ambulatoria (SAR)
+      - Urgencia Hospitalaria (UEH)
+    human_description: ""
+    arcgis_description: null
+    llm_description: "Tipo de unidad de urgencia disponible, como Urgencia Ambulatoria (SAPU o SAR) o Urgencia Hospitalaria (UEH), o No Aplica si no tiene."
+    is_pk: false
+    is_fk: false
+
+  clas_sapu:
+    type: string
+    null_pct: 0.0
+    distinct_count: 2
+    known_values:
+      - Corto
+      - No Aplica
+    human_description: ""
+    arcgis_description: null
+    llm_description: "Clasificación del SAPU como Corto o No Aplica, según la modalidad de atención de urgencia primaria."
+    is_pk: false
+    is_fk: false
+
+  latitud:
+    type: float
+    null_pct: 0.0
+    distinct_count: 93
+    examples:
+      - -54.93521
+      - -54.934374
+      - -53.64055
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Coordenada de latitud geográfica del establecimiento en grados decimales, según el sistema WGS84."
+    is_pk: false
+    is_fk: false
+
+  longitud:
+    type: float
+    null_pct: 0.0
+    distinct_count: 92
+    examples:
+      - -67.60039
+      - -67.608895
+      - -69.64585
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Coordenada de longitud geográfica del establecimiento en grados decimales, según el sistema WGS84."
+    is_pk: false
+    is_fk: false
+
+  prestador:
+    type: string
+    null_pct: 0.0
+    distinct_count: 4
+    known_values:
+      - Fuerzas Armadas y de Orden
+      - No Aplica
+      - Privado
+      - Público
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Naturaleza del prestador de servicios de salud, clasificado como Público, Privado, Fuerzas Armadas y de Orden, o No Aplica."
+    is_pk: false
+    is_fk: false
+
+  estado:
+    type: string
+    null_pct: 0.0
+    distinct_count: 1
+    known_values:
+      - Vigente en operación habitual
+    human_description: ""
+    arcgis_description: null
+    llm_description: "Estado operacional del establecimiento, que para esta capa es siempre Vigente en operación habitual."
+    is_pk: false
+    is_fk: false
+
+  complejida:
+    type: string
+    null_pct: 0.0
+    distinct_count: 5
+    known_values:
+      - Alta Complejidad
+      - Baja Complejidad
+      - Mediana Complejidad
+      - No Aplica
+      - Pendiente
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Nivel de complejidad del establecimiento, como Alta, Mediana o Baja Complejidad, además de No Aplica o Pendiente."
+    is_pk: false
+    is_fk: false
+
+  tipo_aten:
+    type: string
+    null_pct: 0.0
+    distinct_count: 3
+    known_values:
+      - "Atención Abierta-Ambulatoria"
+      - "Atención Cerrada-Hospitalaria"
+      - No Aplica
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Tipo de atención que ofrece el establecimiento, ya sea Atención Abierta-Ambulatoria, Atención Cerrada-Hospitalaria o No Aplica."
+    is_pk: false
+    is_fk: false
+
+  cut_comuna:
+    type: string
+    null_pct: 0.0
+    distinct_count: 18
+    known_values:
+      - 08301
+      - 11101
+      - 11201
+      - 11301
+      - 11302
+      - 11303
+      - 11401
+      - 11402
+      - 12101
+      - 12102
+      - 12103
+      - 12104
+      - 12201
+      - 12301
+      - 12303
+      - 12401
+      - 12402
+      - 13201
+    human_description: "FK"
+    arcgis_description: null
+    llm_description: "Código único territorial de la comuna (CUT), utilizado oficialmente por el INE para identificación comunal."
+    is_pk: false
+    is_fk: false
+
+  cut_region:
+    type: string
+    null_pct: 0.0
+    distinct_count: 4
+    known_values:
+      - 08
+      - 11
+      - 12
+      - 13
+    human_description: "FK"
+    arcgis_description: null
+    llm_description: "Código único territorial de la región (CUT), utilizado oficialmente por el INE para identificación regional."
+    is_pk: false
+    is_fk: false
+
+  cut_provin:
+    type: string
+    null_pct: 0.0
+    distinct_count: 10
+    known_values:
+      - 083
+      - 111
+      - 112
+      - 113
+      - 114
+      - 121
+      - 122
+      - 123
+      - 124
+      - 132
+    human_description: "FK"
+    arcgis_description: null
+    llm_description: "Código único territorial de la provincia (CUT), utilizado oficialmente por el INE para identificación provincial."
+    is_pk: false
+    is_fk: false
+
+  nom_region:
+    type: string
+    null_pct: 0.0
+    distinct_count: 4
+    known_values:
+      - Aysén del General Carlos Ibáñez del Campo
+      - Biobío
+      - Magallanes y de la Antártica Chilena
+      - Metropolitana de Santiago
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Nombre de la región sin el prefijo 'Región de', según la nomenclatura oficial del Ministerio de Salud."
+    is_pk: false
+    is_fk: false
+
+  nom_provin:
+    type: string
+    null_pct: 0.0
+    distinct_count: 10
+    known_values:
+      - Aisén
+      - Antártica Chilena
+      - Biobío
+      - Capitán Prat
+      - Coihaique
+      - Cordillera
+      - General Carrera
+      - Magallanes
+      - Tierra del Fuego
+      - Última Esperanza
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Nombre oficial de la provincia donde se ubica el establecimiento, según la división político-administrativa chilena."
+    is_pk: false
+    is_fk: false
+
+  nom_comuna:
+    type: string
+    null_pct: 0.0
+    distinct_count: 18
+    known_values:
+      - Aisén
+      - Cabo de Hornos
+      - Chile Chico
+      - Cochrane
+      - Coihaique
+      - Laguna Blanca
+      - Los Angeles
+      - Natales
+      - "O'Higgins"
+      - Porvenir
+      - Puente Alto
+      - Punta Arenas
+      - Río Ibáñez
+      - Río Verde
+      - San Gregorio
+      - Timaukel
+      - Torres del Paine
+      - Tortel
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Nombre oficial de la comuna, con ortografía estandarizada, correspondiente a la ubicación del establecimiento."
+    is_pk: false
+    is_fk: false
+
+  ir_google:
+    type: string
+    null_pct: 0.0
+    distinct_count: 93
+    examples:
+      - "https://www.google.cl/maps/dir//-54.935209999999998,-67.600390000000004"
+      - "https://www.google.cl/maps/dir//-54.934373999999998,-67.608895000000004"
+      - "https://www.google.cl/maps/dir//-53.640549999999998,-69.645849999999996"
+    human_description: ""
+    arcgis_description: null
+    llm_description: "Enlace directo a Google Maps para la ubicación del establecimiento, generado a partir de sus coordenadas geográficas."
+    is_pk: false
+    is_fk: false
+
+  simbologia:
+    type: string
+    null_pct: 0.0
+    distinct_count: 7
+    known_values:
+      - Atención Primaria de Salud (APS)
+      - Centros de Salud y Clínicas Privadas
+      - Centros Especializados y de Diagnóstico
+      - Hospitales y Unidades de Hospitalización
+      - Programas y Dispositivos Especiales
+      - Servicios de Apoyo Diagnóstico y Terapéutico
+      - Servicios de Urgencia de Atención Primaria
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Clasificación visual del establecimiento para su representación en mapas temáticos, según categorías como APS, hospitales, clínicas, entre otros."
+    is_pk: false
+    is_fk: false
+
+  geom_3857:
+    type: string
+    null_pct: 0.0
+    distinct_count: 93
+    examples:
+      - "{\"type\": \"Point\", \"coordinates\": [-7525240.9922267, -7349301.83507403]}"
+      - "{\"type\": \"Point\", \"coordinates\": [-7526187.76449589, -7349139.84770444]}"
+      - "{\"type\": \"Point\", \"coordinates\": [-7752940.55786471, -7102372.55491615]}"
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: "Geometría del punto en formato GeoJSON, con coordenadas proyectadas en el sistema de referencia EPSG:3857 (Web Mercator)."
+    is_pk: false
+    is_fk: false
+
+  geom:
+    type: geometry
+    notes: "Columna espacial PostGIS. Usar ST_AsText(geom) para ver coordenadas."
+    human_description: "Valiosa"
+    arcgis_description: null
+    llm_description: null

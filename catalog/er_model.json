@@ -1,163 +1,37 @@
 {
-  "generated_at": "2026-05-12T01:02:09.451253+00:00",
+  "generated_at": "2026-05-13T15:35:10.580595+00:00",
   "nodes": [
     {
-      "id": "dpa_2023",
-      "name": "División Política Administrativa de Chile 2023",
-      "source": "BCN / SUBDERE",
-      "organization": "Biblioteca del Congreso Nacional y Subsecretaría de Desarrollo Regional",
-      "geoportal_id": 36391,
-      "geometry_type": "polygon",
-      "feature_count": null,
-      "schema_status": "pending_verification",
-      "use_cases": [
-        "Base geográfica para cualquier mapa temático de Chile (coroplético)",
-        "Colorear comunas según densidad de establecimientos de salud o educación",
-        "Calcular superficies comunales para normalizar por km²",
-        "Visualizar la estructura administrativa completa del país"
-      ],
-      "is_ghost": false
-    },
-    {
-      "id": "establecimientos_educacion",
-      "name": "Establecimientos de Educación Escolar",
-      "source": "MINEDUC",
-      "organization": "Ministerio de Educación de Chile",
-      "geoportal_id": 35408,
+      "id": "establecimientos_de_salud_de_chile_febrero_2026",
+      "name": "establecimientos_de_salud_de_chile_febrero_2026",
+      "source": {
+        "type": "wfs",
+        "workspace": "EstablecimientosdesaluddeChile2026",
+        "typename": "EstablecimientosdesaluddeChile2026:establecimientos_de_salud_febrero_2026"
+      },
+      "organization": "",
+      "geoportal_id": null,
       "geometry_type": "point",
-      "feature_count": null,
-      "schema_status": "pending_verification",
-      "use_cases": [
-        "Distribución territorial de colegios públicos vs privados por comuna",
-        "Análisis de cobertura educacional junto con datos de población infantil (INE)",
-        "Cruzar con establecimientos de salud para análisis de infraestructura social por zona",
-        "Identificar comunas con baja razón de establecimientos por habitante en edad escolar"
-      ],
-      "is_ghost": false
-    },
-    {
-      "id": "establecimientos_salud",
-      "name": "Establecimientos de Salud de Chile 2025",
-      "source": "MINSAL",
-      "organization": "Ministerio de Salud de Chile",
-      "geoportal_id": 36779,
-      "geometry_type": "point",
-      "feature_count": 5181,
+      "feature_count": 5159,
       "schema_status": "verified",
-      "use_cases": [
-        "Cuántos hospitales públicos hay en cada región y cómo se distribuyen",
-        "Qué comunas no tienen urgencia disponible (campo urgencia='NO')",
-        "Razón de establecimientos por 100.000 habitantes — cruzar con INE población",
-        "Comparar cobertura pública vs privada por zona geográfica",
-        "Identificar brechas de atención primaria (CESFAM) vs población FONASA inscrita"
-      ],
+      "use_cases": [],
       "is_ghost": false
     },
     {
-      "id": "deis_rem",
-      "name": "deis_rem",
-      "is_ghost": true
-    },
-    {
-      "id": "dim_servicio_salud",
-      "name": "dim_servicio_salud",
-      "is_ghost": true
-    },
-    {
-      "id": "fonasa_beneficiarios",
-      "name": "fonasa_beneficiarios",
-      "is_ghost": true
-    },
-    {
-      "id": "ine_proyecciones_poblacion",
-      "name": "ine_proyecciones_poblacion",
-      "is_ghost": true
+      "id": "resultados_censo_de_poblacion_y_vivienda_2024",
+      "name": "resultados_censo_de_poblacion_y_vivienda_2024",
+      "source": {
+        "type": "arcgis_rest",
+        "_status": "pendiente — completar manualmente"
+      },
+      "organization": "",
+      "geoportal_id": null,
+      "geometry_type": null,
+      "feature_count": null,
+      "schema_status": "pending_verification",
+      "use_cases": [],
+      "is_ghost": false
     }
   ],
-  "edges": [
-    {
-      "from": "dpa_2023",
-      "to": "establecimientos_salud",
-      "join_on": "cut_comuna",
-      "join_type": "one_to_many",
-      "description": "Agrega y mapea establecimientos de salud por comuna"
-    },
-    {
-      "from": "dpa_2023",
-      "to": "establecimientos_educacion",
-      "join_on": "cut_comuna",
-      "join_type": "one_to_many",
-      "description": "Agrega y mapea establecimientos educacionales por comuna"
-    },
-    {
-      "from": "dpa_2023",
-      "to": "ine_proyecciones_poblacion",
-      "join_on": "cut_comuna",
-      "join_type": "one_to_one",
-      "description": "Enriquece cada polígono comunal con población estimada"
-    },
-    {
-      "from": "dpa_2023",
-      "to": "fonasa_beneficiarios",
-      "join_on": "cut_comuna",
-      "join_type": "one_to_one",
-      "description": "Enriquece cada polígono comunal con beneficiarios FONASA"
-    },
-    {
-      "from": "establecimientos_educacion",
-      "to": "dpa_2023",
-      "join_on": "cut_comuna",
-      "join_type": "many_to_one",
-      "description": "Une cada establecimiento con el polígono comunal para mapas temáticos"
-    },
-    {
-      "from": "establecimientos_educacion",
-      "to": "ine_proyecciones_poblacion",
-      "join_on": "cut_comuna",
-      "join_type": "many_to_one",
-      "description": "Normaliza establecimientos por población en edad escolar por comuna"
-    },
-    {
-      "from": "establecimientos_educacion",
-      "to": "establecimientos_salud",
-      "join_on": "cut_comuna",
-      "join_type": "many_to_many",
-      "description": "Análisis combinado de infraestructura social: salud y educación en la misma comuna"
-    },
-    {
-      "from": "establecimientos_salud",
-      "to": "dpa_2023",
-      "join_on": "cut_comuna",
-      "join_type": "many_to_one",
-      "description": "Une cada establecimiento con el polígono de su comuna. Permite mapas coropléticos de densidad de establecimientos.\n"
-    },
-    {
-      "from": "establecimientos_salud",
-      "to": "ine_proyecciones_poblacion",
-      "join_on": "cut_comuna",
-      "join_type": "many_to_one",
-      "description": "Normaliza el conteo de establecimientos por población comunal. KPI derivado: establecimientos por 100.000 habitantes.\n"
-    },
-    {
-      "from": "establecimientos_salud",
-      "to": "fonasa_beneficiarios",
-      "join_on": "cut_comuna",
-      "join_type": "many_to_one",
-      "description": "Estima carga potencial: beneficiarios FONASA por establecimiento público de atención primaria en la misma comuna.\n"
-    },
-    {
-      "from": "establecimientos_salud",
-      "to": "deis_rem",
-      "join_on": "cod_vig",
-      "join_type": "one_to_many",
-      "description": "Cruza capacidad instalada (tipo, nivel, complejidad) con producción real mensual (consultas, urgencias, hospitalizaciones).\n"
-    },
-    {
-      "from": "establecimientos_salud",
-      "to": "dim_servicio_salud",
-      "join_on": "cod_dep",
-      "join_type": "many_to_one",
-      "description": "Identifica a qué Servicio de Salud o SEREMI pertenece cada establecimiento. Chile tiene 29 Servicios de Salud.\n"
-    }
-  ]
+  "edges": []
 }

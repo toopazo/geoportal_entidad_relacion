@@ -1,4 +1,52 @@
+volumes:
+  postgres_data:
+
 services:
+
+  # ─────────────────────────────────────────────────────────
+  # postgres
+  # Base de datos PostgreSQL + PostGIS.
+  # Contiene muestras de 100 filas por capa curada.
+  #
+  # Uso:
+  #   docker compose up -d postgres       levantar en background
+  #   docker compose stop postgres        detener sin borrar datos
+  #   docker compose down -v              borrar datos (destructivo)
+  # ─────────────────────────────────────────────────────────
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: geoportal
+      POSTGRES_USER: geoportal
+      POSTGRES_PASSWORD: geoportal
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # ─────────────────────────────────────────────────────────
+  # load-sample
+  # Descarga 100 filas de una capa vía WFS y las carga en postgres.
+  # También guarda la muestra como JSON en catalog/samples/.
+  #
+  # Requiere que postgres esté corriendo:
+  #   docker compose up -d postgres
+  #
+  # Uso:
+  #   docker compose run --rm load-sample --layer establecimientos_salud
+  #   docker compose run --rm load-sample --layer establecimientos_salud --rows 50
+  # ─────────────────────────────────────────────────────────
+  load-sample:
+    build:
+      context: .
+      dockerfile: Dockerfile.tools
+    environment:
+      DATABASE_URL: postgresql://geoportal:geoportal@localhost:5432/geoportal
+    volumes:
+      - ./catalog:/app/catalog
+    working_dir: /app
+    command: python scripts/load_sample.py
+    network_mode: host
 
   # ─────────────────────────────────────────────────────────
   # schema-check
@@ -20,7 +68,6 @@ services:
       context: .
       dockerfile: Dockerfile.tools
     volumes:
-      # Montar catalog/ para que los snapshots generados queden en el host
       - ./catalog:/app/catalog
     working_dir: /app
     command: python scripts/check_schema_drift.py

@@ -5,6 +5,24 @@
 
 ---
 
+## Índice
+
+1. [Visión de alto nivel: ¿Qué es un GIS y qué es el geoportal?](#1-visión-de-alto-nivel-qué-es-un-gis-y-qué-es-el-geoportal)
+2. [Stack tecnológico del geoportal](#2-stack-tecnológico-del-geoportal)
+3. [Operaciones WFS fundamentales](#3-operaciones-wfs-fundamentales-con-ejemplos-reales)
+4. [ArcGIS REST: fuente de datos alternativa](#4-arcgis-rest-fuente-de-datos-alternativa)
+5. [Estructura de la capa principal: Establecimientos de Salud](#5-estructura-de-la-capa-principal-establecimientos-de-salud)
+6. [El CUT: la clave foránea universal del Estado de Chile](#6-el-cut-la-clave-foránea-universal-del-estado-de-chile)
+7. [Mapa de relaciones: tablas enlazables](#7-mapa-de-relaciones-tablas-enlazables)
+8. [Datasets enlazables: catálogo de fuentes](#8-datasets-enlazables-catálogo-de-fuentes)
+9. [Problemas prácticos conocidos](#9-problemas-prácticos-conocidos)
+10. [Esquema de tablas para el ejercicio de alumnos](#10-esquema-de-tablas-para-el-ejercicio-de-alumnos)
+11. [Flujo de curado de una capa](#11-flujo-de-curado-de-una-capa)
+12. [Checklist para sesión de trabajo](#12-checklist-para-sesión-de-trabajo-con-el-geoportal)
+13. [URLs de referencia](#13-urls-de-referencia)
+
+---
+
 ## 1. Visión de alto nivel: ¿Qué es un GIS y qué es el geoportal?
 
 ### GIS (Geographic Information System)
@@ -59,6 +77,81 @@ GeoServer implementa varios estándares:
 
 ### Para análisis de datos: siempre WFS
 WFS devuelve los **datos en bruto** en formato GeoJSON o XML. Es el equivalente a un `SELECT * FROM tabla`. Use WFS cuando quiera hacer análisis, limpiar datos, o construir un tablero.
+
+### Estructura del GeoJSON: qué es tabla y qué no
+
+GeoJSON (RFC 7946) es el formato estándar que devuelve el WFS. Cada registro tiene dos partes:
+
+```json
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [-67.60039, -54.93521]
+  },
+  "properties": {
+    "nombre": "Hospital Cristina Calderón",
+    "tipo": "Hospital",
+    "cut_comuna": "12201"
+  }
+}
+```
+
+| Parte | Qué es | Analizable como tabla |
+|---|---|---|
+| `properties` | Atributos del objeto — columnas, valores | **Sí** — es la tabla |
+| `geometry` | Ubicación y forma geográfica | No directamente |
+
+**Tipos de geometría:**
+```
+Point       → [longitud, latitud]                   ← un establecimiento, un hito
+LineString  → [[lon1,lat1], [lon2,lat2], ...]       ← una calle, un río
+Polygon     → [[[lon1,lat1], [lon2,lat2], ...]]     ← una comuna, un predio
+```
+
+Regla: el orden de coordenadas es siempre **longitud primero, latitud segundo** — al revés de Google Maps.
+
+La relación entre `properties` y `geometry` es 1 a 1: cada fila de la tabla tiene exactamente una geometría. `properties` describe el **qué**, `geometry` describe el **dónde**.
+
+---
+
+### Anatomía de una URL WFS
+
+```
+https://geoportal.cl
+    /geoserver/                                ← el servidor GeoServer
+    EstablecimientosdesaluddeChile2025/        ← workspace (como un schema en postgres)
+    wfs                                        ← declara que usamos el protocolo WFS
+    ?service=WFS                               ← redundante, confirma el protocolo
+    &version=1.0.0                             ← versión del estándar OGC
+    &request=GetFeature                        ← la operación (el "verbo")
+    &typeName=establecimientos_de_..._2025     ← la capa (el "recurso" / la tabla)
+    &maxFeatures=100                           ← LIMIT 100
+    &outputFormat=application/json             ← quiero GeoJSON, no XML
+```
+
+### Vitrina, bodega viva y bodega muerta
+
+Cada capa en el geoportal puede tener hasta tres representaciones:
+
+```
+VITRINA (HTML para humanos)
+https://geoportal.cl/geoportal/catalog/{id}/...
+  │
+  ├── BODEGA VIVA (WFS — API, datos consultables en tiempo real)
+  │   https://geoportal.cl/geoserver/{workspace}/wfs?request=GetCapabilities
+  │   → Podés filtrar, pedir columnas específicas, paginar
+  │
+  └── BODEGA MUERTA (GeoJSON descargable — snapshot fijo)
+      https://geoportal.cl/{organismo}/catalog/download/{uuid}
+      → Archivo guardado en una fecha fija, sin filtros, descarga total
+```
+
+| | WFS (bodega viva) | GeoJSON descargable (bodega muerta) |
+|---|---|---|
+| Datos | En tiempo real desde GeoServer | Snapshot de una fecha fija |
+| Filtros | Sí (`cql_filter`, `maxFeatures`) | No, descargás todo |
+| Para qué | Análisis programático, dashboards | Backup, trabajo offline |
 
 ---
 
@@ -115,7 +208,99 @@ cql_filter=DWITHIN(geom, POINT(-70.6 -33.4), 50000, meters)
 
 ---
 
-## 4. Estructura de la capa principal: Establecimientos de Salud
+## 4. ArcGIS REST: fuente de datos alternativa
+
+El geoportal.cl a veces referencia capas que no viven en GeoServer sino en ArcGIS Online (ESRI). Estas capas tienen su propio protocolo de acceso: **ArcGIS Feature Service REST API**.
+
+### Por qué existe
+
+Algunos organismos (INE, GORE, municipios) publican sus datos en ArcGIS Online en vez de en GeoServer. El geoportal los lista en su catálogo, pero la bodega viva está en otro servidor.
+
+Ejemplo: el Censo 2024 del INE está en:
+```
+https://services5.arcgis.com/hUyD8u3TeZLKPe4T/arcgis/rest/services/Censo2024_v2/FeatureServer
+```
+
+### Cómo descubrir el Feature Service desde el catálogo
+
+Cuando la página del catálogo tiene `servicio_mapas.wfs_capabilities` vacío pero sí tiene un dashboard ArcGIS en `descargas`, buscar Feature Services del organismo via ArcGIS REST:
+
+```bash
+# 1. Obtener el orgId del dashboard (aparece en la URL de la respuesta del item)
+curl "https://ine-chile.maps.arcgis.com/sharing/rest/content/items/{dashboard_id}?f=json"
+# → buscar "orgId"
+
+# 2. Buscar Feature Services del owner
+curl "https://{org}.maps.arcgis.com/sharing/rest/search?q=owner:{owner}+type:Feature+Service+{keyword}&f=json&num=10"
+
+# 3. Ver las capas dentro de un Feature Service
+curl "{service_url}?f=json"
+```
+
+### Operaciones equivalentes a WFS
+
+| WFS | ArcGIS REST | Para qué |
+|---|---|---|
+| `GetCapabilities` | `{service_url}?f=json` | Listar capas disponibles |
+| `DescribeFeatureType` | `{service_url}/{layer_id}?f=json` | Ver columnas y tipos |
+| `GetFeature` | `{service_url}/{layer_id}/query?where=1=1&outFields=*&f=geojson` | Descargar datos |
+
+### Formato de respuesta
+
+ArcGIS soporta `f=geojson` y devuelve GeoJSON estándar (RFC 7946), idéntico al WFS. El pipeline de validación e inserción en postgres es el mismo.
+
+```bash
+# Descargar 100 comunas del Censo 2024
+curl "https://services5.arcgis.com/hUyD8u3TeZLKPe4T/arcgis/rest/services/Censo2024_v2/FeatureServer/11/query
+  ?where=1=1
+  &outFields=CUT,COMUNA,n_per,n_hog
+  &resultRecordCount=100
+  &returnGeometry=true
+  &f=geojson"
+```
+
+### Tipos de campo ArcGIS → postgres
+
+| Tipo ArcGIS | Postgres |
+|---|---|
+| `esriFieldTypeInteger` / `esriFieldTypeOID` | `INTEGER` |
+| `esriFieldTypeDouble` | `DOUBLE PRECISION` |
+| `esriFieldTypeString` | `TEXT` |
+| `esriFieldTypeDate` | `BIGINT` (timestamp en ms — convertir manualmente) |
+| `esriGeometryPolygon` | `geometry(MultiPolygon, 4326)` |
+| `esriGeometryPoint` | `geometry(Point, 4326)` |
+
+### El bloque `source` en el YAML
+
+Para WFS:
+```yaml
+source:
+  type: wfs
+  workspace: EstablecimientosdesaluddeChile2026
+  typename: "EstablecimientosdesaluddeChile2026:establecimientos_de_salud_febrero_2026"
+```
+
+Para ArcGIS REST:
+```yaml
+source:
+  type: arcgis_rest
+  service_url: "https://services5.arcgis.com/hUyD8u3TeZLKPe4T/arcgis/rest/services/Censo2024_v2/FeatureServer"
+  layer_id: 11
+  layer_name: "Comunal_CPV24"
+```
+
+En ambos casos el flujo es idéntico: `make load LAYER={id}` descarga 100 filas y las carga en postgres.
+
+### Caso real: Censo 2024 (INE)
+
+- **Catálogo geoportal:** `https://geoportal.cl/geoportal/catalog/36568/`
+- **Feature Service:** `https://services5.arcgis.com/hUyD8u3TeZLKPe4T/arcgis/rest/services/Censo2024_v2/FeatureServer`
+- **Capa usada:** `[11] Comunal_CPV24` — 346 comunas, ~215 columnas (población, vivienda, empleo, educación)
+- **Clave de unión:** `CUT` (idéntico al estándar SUBDERE)
+
+---
+
+## 5. Estructura de la capa principal: Establecimientos de Salud
 
 ### Workspace
 ```
@@ -197,7 +382,7 @@ EstablecimientosdesaluddeChile2025:establecimientos_de_salud_diciembre_2025
 
 ---
 
-## 5. El CUT: la clave foránea universal del Estado de Chile
+## 6. El CUT: la clave foránea universal del Estado de Chile
 
 El **CUT (Código Único Territorial)** es el estándar nacional para identificar unidades político-administrativas. Es mantenido por SUBDERE (Subsecretaría de Desarrollo Regional).
 
@@ -221,7 +406,7 @@ Es la llave que permite hacer JOIN entre cualquier dataset del Estado.
 
 ---
 
-## 6. Mapa de relaciones: tablas enlazables
+## 7. Mapa de relaciones: tablas enlazables
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -267,7 +452,7 @@ Es la llave que permite hacer JOIN entre cualquier dataset del Estado.
 
 ---
 
-## 7. Datasets enlazables: catálogo de fuentes
+## 8. Datasets enlazables: catálogo de fuentes
 
 ### 7.1 División Política Administrativa 2023
 - **Fuente**: Biblioteca del Congreso Nacional (BCN) / SUBDERE
@@ -324,7 +509,7 @@ Es la llave que permite hacer JOIN entre cualquier dataset del Estado.
 
 ---
 
-## 8. Problemas prácticos conocidos
+## 9. Problemas prácticos conocidos
 
 ### 8.1 GetCapabilities global falla
 ```
@@ -381,7 +566,7 @@ El geoportal publica snapshots (diciembre 2025, febrero 2026), no datos en tiemp
 
 ---
 
-## 9. Esquema de tablas para el ejercicio de alumnos
+## 10. Esquema de tablas para el ejercicio de alumnos
 
 ```
 TABLA PRINCIPAL (geoportal WFS):
@@ -444,11 +629,106 @@ fact_fonasa
 
 ---
 
-## 10. Checklist para sesión de trabajo con el geoportal
+## 11. Flujo de curado de una capa
 
-- [ ] Identificar el workspace name del dataset (inspeccionar el visualizador si es necesario)
-- [ ] Correr `DescribeFeatureType` para obtener columnas exactas
+El curado se hace siempre contra la **bodega viva**, nunca contra el GeoJSON descargable. La fuente puede ser WFS (geoportal) o ArcGIS REST (otros portales). Los valores documentados son válidos a la fecha del curado y pueden cambiar.
+
+### Setup inicial (una sola vez)
+
+```bash
+make setup       # crea .venv/ e instala dependencias
+make db-up       # levanta postgres + PostGIS en Docker
+```
+
+Crear el archivo `.env` en la raíz del proyecto (gitignoreado):
+```
+DEEPSEEK_API_KEY=sk-...    # platform.deepseek.com
+DATABASE_URL=postgresql://geoportal:geoportal@localhost:5432/geoportal
+```
+
+### Pasos por capa
+
+**1. Crear el YAML desde el catálogo**
+```bash
+make scrape URL=https://geoportal.cl/geoportal/catalog/{id}/...
+```
+El scraper:
+- Extrae verbatim las 5 secciones del catálogo (identificación, contacto, servicio de mapas, descargas, ámbito espacial)
+- Auto-detecta la fuente: WFS (si hay URL de GeoServer) o ArcGIS REST (si hay URL `arcgis.com` en descargas)
+- Para WFS: descubre `workspace` y `typename` vía GetCapabilities
+- Para ArcGIS: busca el Feature Service del organismo, puntúa por similitud con el título, pide confirmación si hay ambigüedad
+- Crea `catalog/layers/{slug_del_titulo}.yaml` listo para curar
+
+**2. Cargar muestra en postgres**
+```bash
+make load LAYER={id}
+```
+- Descarga 100 filas vía WFS o ArcGIS REST y valida GeoJSON (RFC 7946)
+- Guarda la muestra en `catalog/samples/{id}/{fecha}.json` (respaldo con geometría incluida)
+- Crea la tabla en postgres con columna `geom` PostGIS
+
+**3. Generar stubs de columnas**
+```bash
+make profile LAYER={id}
+```
+Para cada columna genera automáticamente en el YAML:
+- `null_pct` y `distinct_count` desde los datos reales
+- `known_values` (si ≤ 20 valores distintos) o `examples` (si > 20)
+- `arcgis_description` — alias oficial del Feature Service (solo capas ArcGIS)
+- `llm_description` — descripción generada por DeepSeek usando el dominio oficial del organismo como contexto
+- `human_description: ""` — campo vacío que rellena el curador
+
+**4. Curar columna a columna en DBeaver**
+
+Conexión postgres:
+- Host: `localhost` · Puerto: `5432` · Base de datos: `geoportal`
+- Usuario: `geoportal` · Contraseña: `geoportal`
+
+Para cada columna, abrir el YAML y completar `human_description` apoyándose en DBeaver:
+```sql
+-- Valores únicos de un campo categórico
+SELECT DISTINCT tipo, count(*) FROM {tabla} GROUP BY tipo ORDER BY count DESC;
+
+-- Detectar nulos
+SELECT count(*) FILTER (WHERE fono IS NULL)     AS nulos,
+       count(*) FILTER (WHERE fono IS NOT NULL)  AS con_valor
+FROM {tabla};
+
+-- Tipo real de una columna
+SELECT pg_typeof(cut_comuna) FROM {tabla} LIMIT 1;
+
+-- Ver geometría en texto
+SELECT nombre, ST_AsText(geom), ST_X(geom) AS lon, ST_Y(geom) AS lat
+FROM {tabla} LIMIT 5;
+```
+
+Completar también `is_pk`, `is_fk`, `fk_target` para las claves foráneas.
+
+**5. Dar check**
+```bash
+# En el YAML:
+schema_status: verified
+last_reviewed: "YYYY-MM-DD"
+
+# Luego:
+make build-er    # regenera el diagrama ER
+```
+
+---
+
+## 12. Checklist para sesión de trabajo con el geoportal
+
+**Regla de curado:** siempre contra la bodega viva (WFS o ArcGIS REST), nunca contra el GeoJSON descargable. La bodega muerta puede estar desincronizada. Registrar la fecha del curado.
+
+- [ ] `make scrape URL=...` — crear YAML desde el catálogo
+- [ ] `make load LAYER=...` — cargar 100 filas en postgres
+- [ ] `make profile LAYER=...` — generar stubs de columnas con llm_description
+- [ ] Completar `human_description` columna a columna usando DBeaver
 - [ ] Verificar tipos de datos de claves foráneas (int vs string)
+- [ ] Completar `is_pk`, `is_fk`, `fk_target` para columnas clave
+- [ ] Completar `use_cases` y `relations` en el YAML
+- [ ] Cambiar `schema_status: verified` y actualizar `last_reviewed`
+- [ ] `make build-er` — regenerar diagrama ER
 - [ ] Verificar `totalFeatures` en el GeoJSON para saber el tamaño total
 - [ ] Confirmar encoding de caracteres especiales (UTF-8)
 - [ ] Al cruzar con INE/FONASA: estandarizar `cut_comuna` como int de 5 dígitos
@@ -456,7 +736,7 @@ fact_fonasa
 
 ---
 
-## 11. URLs de referencia
+## 13. URLs de referencia
 
 | Recurso | URL |
 |---------|-----|

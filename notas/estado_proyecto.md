@@ -5,6 +5,55 @@
 
 ---
 
+## Sesión 2026-05-13
+
+### Qué se discutió
+
+**Conceptos GIS aclarados.** Se explicaron las diferencias entre: API/WFS/capa/recurso, GeoJSON vs tabla, geometrías Point/LineString/Polygon, vitrina/bodega viva/bodega muerta, WFS vs ArcGIS REST, y la relación entre `properties` (tabla) y `geometry` (dónde) en un GeoJSON.
+
+**Fuentes de datos más allá del WFS.** El geoportal referencia capas que viven en ArcGIS Online (INE, GORE). Se implementó soporte para `arcgis_rest` como tipo de fuente, con descubrimiento automático de Feature Services via la API de ArcGIS. Caso real: Censo 2024 en `services5.arcgis.com`.
+
+**Flujo de curado rediseñado.** El flujo anterior era manual y basado en Docker. El nuevo flujo usa `make` con venv permanente:
+1. `make scrape URL=...` — crea el YAML desde la página del catálogo (auto-detecta WFS o ArcGIS)
+2. `make load LAYER=...` — descarga 100 filas y carga en postgres
+3. `make profile LAYER=...` — genera stubs de columnas con datos reales + descripciones LLM
+
+**Descripciones automáticas de columnas.** Cada columna tiene tres campos de descripción: `human_description` (manual), `arcgis_description` (alias oficial de ArcGIS cuando aplica), `llm_description` (generado por DeepSeek usando el dominio oficial del organismo como contexto).
+
+### Qué se construyó
+
+- `scripts/scrape_catalog.py` — scraper completo del catálogo geoportal.cl: extrae 5 secciones verbatim, auto-detecta WFS o ArcGIS, descubre workspace/typename o service_url/layer_id, crea el YAML desde cero. Solo interrumpe al usuario si hay ambigüedad irresoluble.
+- `scripts/load_sample.py` — refactorizado con dispatcher WFS/ArcGIS. Ambas fuentes producen GeoJSON estándar y se cargan igual en postgres.
+- `scripts/profile_layer.py` — perfila columnas desde postgres: % nulos, distinct count, known_values (≤20 valores), ejemplos (>20), + llm_description via DeepSeek API + arcgis_description via aliases.
+- `scripts/check_schema_drift.py` — actualizado para soportar `source: {type: wfs}` y `source: {type: arcgis_rest}`.
+- `docker-compose.yml` — agrega servicio `postgres` (PostGIS 16) y `load-sample`.
+- `Makefile` — punto de entrada unificado: `make scrape/load/profile/schema-check/build-er/db-up`.
+- `GEOPORTAL.md` — documentación ampliada: GeoJSON, ArcGIS REST, flujo de curado, vitrina/bodega.
+- `.env` (gitignoreado) — `DEEPSEEK_API_KEY` y `DATABASE_URL`.
+- YAMLs renombrados con el nombre exacto del catálogo: `establecimientos_de_salud_de_chile_febrero_2026.yaml`, `resultados_censo_de_poblacion_y_vivienda_2024.yaml`.
+
+### Decisiones tomadas
+
+| Decisión | Razonamiento |
+|---|---|
+| Nombre YAML = slug del título del catálogo | Trazabilidad directa: el nombre del archivo refleja el recurso exacto |
+| Tres campos de descripción por columna | Separar lo institucional (arcgis), lo generado (llm) y lo validado (human) |
+| DeepSeek como LLM para descripciones | Costo y calidad suficiente para el caso de uso |
+| ArcGIS REST soportado nativamente | El geoportal referencia fuentes externas; el sistema debe seguirlas |
+| Curado siempre contra bodega viva (WFS/ArcGIS) | Nunca GeoJSON descargable — puede estar desincronizado |
+| PostgreSQL + PostGIS en Docker | Backend definitivo para muestras + futura API FastAPI |
+
+### Próximos pasos
+
+- [ ] Curar `establecimientos_de_salud_de_chile_febrero_2026.yaml` — completar `human_description` columna a columna en DBeaver
+- [ ] Cambiar `schema_status: verified` al terminar el curado
+- [ ] Correr `make scrape` para `dpa_2023` y `establecimientos_educacion`
+- [ ] Curar `resultados_censo_de_poblacion_y_vivienda_2024.yaml` (ArcGIS — probar flujo completo)
+- [ ] Definir `relations:` y `use_cases:` en ambos YAMLs
+- [ ] Empezar backend FastAPI
+
+---
+
 ## Sesión 2026-05-11
 
 ### Qué se discutió
