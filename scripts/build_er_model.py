@@ -125,7 +125,9 @@ def _node_label(layer_id: str, layer: dict) -> str:
     header_bg, header_font, row_bg, _ = style
 
     name = layer.get("name", layer_id)
-    source = layer.get("source", "")
+    source_data = layer.get("source", {})
+    source_type = source_data.get("type", "") if isinstance(source_data, dict) else ""
+    source_label = {"wfs": "WFS", "arcgis_rest": "ArcGIS REST", "static": "Snapshot estática"}.get(source_type, source_type)
     geom = GEOMETRY_ICON.get(layer.get("geometry_type", ""), "")
     count = layer.get("feature_count")
     count_str = f"{count:,}".replace(",", ".") + " registros" if count else "N registros"
@@ -136,8 +138,7 @@ def _node_label(layer_id: str, layer: dict) -> str:
     return (
         f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" BGCOLOR="{row_bg}">'
         f'<TR><TD BGCOLOR="{header_bg}"><FONT COLOR="{header_font}"><B>{name}</B></FONT></TD></TR>'
-        f'<TR><TD ALIGN="LEFT"><FONT POINT-SIZE="10">{source}</FONT></TD></TR>'
-        f'<TR><TD ALIGN="LEFT"><FONT POINT-SIZE="10">{geom_count}</FONT></TD></TR>'
+        f'<TR><TD ALIGN="LEFT"><FONT POINT-SIZE="10">{geom_count}  ·  {source_label}</FONT></TD></TR>'
         f'<TR><TD ALIGN="LEFT"><FONT POINT-SIZE="9" COLOR="{header_bg}">{status_label}</FONT></TD></TR>'
         f'</TABLE>>'
     )

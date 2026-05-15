@@ -77,15 +77,22 @@ use_cases: []
 
 # ------------------------------------------------------------------------------
 # Relaciones con otras capas — completar manualmente
+#
+# Formato:
+#   - target: <id del YAML de destino, ej: division_politica_administrativa_2023>
+#     join_on: <columna_esta_tabla> = <columna_otra_tabla>
+#     join_type: one_to_one | one_to_many | many_to_one
+#
+# Ejemplo (esta tabla → DPA 2023 vía spatial join):
+#   - target: division_politica_administrativa_2023
+#     join_on: ST_Boundary(geom) = geom
+#     join_type: many_to_one
 # ------------------------------------------------------------------------------
 relations: []
 
 # ------------------------------------------------------------------------------
 # Columnas — completar durante el curado
 # Leyenda:
-#   is_pk: identifica unívocamente cada registro en esta tabla
-#   is_fk: es una clave foránea hacia otra tabla
-#   fk_target: tabla.columna de destino del JOIN
 #   truncated: nombre cortado por límite shapefile (10 chars)
 #   tags (vocabulario controlado):
 #     relevante  — columna con valor analítico, candidata a mostrar en frontend
@@ -106,8 +113,6 @@ columns:
     tags: [relevante]
     arcgis_description: null
     llm_description: "Indica la jerarquía administrativa del límite representado: 'COMUNAL' para límites de comunas, 'PROVINCIAL' para límites de provincias y 'REGIONAL' para límites de regiones."
-    is_pk: false
-    is_fk: false
 
   geom:
     type: geometry

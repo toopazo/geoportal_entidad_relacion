@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-13T21:54:07.948350+00:00",
+  "generated_at": "2026-05-15T20:17:05.447227+00:00",
   "nodes": [
     {
       "id": "division_politica_administrativa_2023",
@@ -35,17 +35,36 @@
       "is_ghost": false
     },
     {
-      "id": "resultados_censo_de_poblacion_y_vivienda_2024",
-      "name": "resultados_censo_de_poblacion_y_vivienda_2024",
+      "id": "linea_digital_de_los_limites_interiores_de_la_division_politico_administrativa",
+      "name": "linea_digital_de_los_limites_interiores_de_la_division_politico_administrativa",
       "source": {
-        "type": "arcgis_rest",
-        "_status": "pendiente — completar manualmente"
+        "type": "static",
+        "download_url": "https://www.geoportal.cl/geoportal/catalog/download/85edbcc7-0462-3441-a152-ecfebd3796e4",
+        "format": "rar",
+        "downloaded_at": "2026-05-13"
       },
       "organization": "",
       "geoportal_id": null,
       "geometry_type": null,
       "feature_count": null,
       "schema_status": "pending_verification",
+      "use_cases": [],
+      "is_ghost": false
+    },
+    {
+      "id": "resultados_censo_de_poblacion_y_vivienda_2024",
+      "name": "resultados_censo_de_poblacion_y_vivienda_2024",
+      "source": {
+        "type": "arcgis_rest",
+        "service_url": "https://services5.arcgis.com/hUyD8u3TeZLKPe4T/arcgis/rest/services/CENSO2024_V2_gdb/FeatureServer",
+        "layer_id": 0,
+        "layer_name": "COMUNA_DPA_INDICADORES"
+      },
+      "organization": "",
+      "geoportal_id": null,
+      "geometry_type": "polygon",
+      "feature_count": 346,
+      "schema_status": "verified",
       "use_cases": [],
       "is_ghost": false
     }
@@ -70,6 +89,20 @@
       "to": "division_politica_administrativa_2023",
       "join_on": "cut_region = CUT_REG",
       "join_type": "many_to_one",
+      "description": ""
+    },
+    {
+      "from": "resultados_censo_de_poblacion_y_vivienda_2024",
+      "to": "division_politica_administrativa_2023",
+      "join_on": "CUT = CUT_COM",
+      "join_type": "one_to_one",
+      "description": ""
+    },
+    {
+      "from": "resultados_censo_de_poblacion_y_vivienda_2024",
+      "to": "establecimientos_de_salud_de_chile_febrero_2026",
+      "join_on": "CUT = cut_comuna",
+      "join_type": "one_to_many",
       "description": ""
     }
   ]

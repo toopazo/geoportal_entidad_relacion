@@ -318,9 +318,6 @@ def build_columns_yaml(
         llm_desc = llm_descriptions.get(name, "")
         lines.append(f"    llm_description: {_yaml_str(llm_desc) if llm_desc else 'null'}")
 
-        lines.append(f"    is_pk: false")
-        lines.append(f"    is_fk: false")
-
     return "\n".join(lines) + "\n"
 
 

@@ -5,6 +5,50 @@
 
 ---
 
+## Sesión 2026-05-15
+
+### Qué se discutió
+
+**Curado de `resultados_censo_de_poblacion_y_vivienda_2024`** — flujo ArcGIS completo. El scraper tenía 16 candidatos y no pudo auto-seleccionar. Se inspeccionó la API de ArcGIS manualmente para identificar `CENSO2024_V2_gdb` / `COMUNA_DPA_INDICADORES` como la fuente correcta (tabla analítica con indicadores por comuna, 346 registros). El usuario corrió `make scrape` interactivamente.
+
+**Descubrimiento: datos a nivel manzana.** `Censo2024_v2` tiene una capa `Manzanas_CPV24` con 216.341 manzanas y 216 columnas de indicadores censales. Se decidió terminar primero la tabla comunal y abordar manzanas después.
+
+**Eliminación de `is_pk` / `is_fk`** — campos decorativos sin uso en ningún script. `is_fk` era redundante con `tags: [fk]`. `is_pk` no afectaba nada. Se eliminaron de todos los YAMLs, de `profile_layer.py` (stubs) y de `scrape_catalog.py` (leyenda).
+
+**Comentario de formato en `relations:`** — se agregó bloque de ayuda con formato y ejemplo en todos los YAMLs existentes y en el scraper para tablas futuras.
+
+**Mejoras al `make help`** — documenta el flujo completo de curado (5 pasos) con ejemplos y notas.
+
+**ER model** — se corrigió el nodo que mostraba el dict de `source` como JSON crudo. Ahora muestra tipo legible (WFS / ArcGIS REST / Snapshot estática) junto a geometría y conteo en una sola fila.
+
+### Qué se construyó
+
+- `catalog/layers/resultados_censo_de_poblacion_y_vivienda_2024.yaml` — curado y verificado: 29 columnas con stubs LLM, 2 relaciones (→ DPA, → salud), `schema_status: verified`
+- `catalog/samples/resultados_censo_de_poblacion_y_vivienda_2024/` — muestra cargada en postgres
+- `scripts/scrape_catalog.py` — agrega bloque de comentario con formato de `relations:` en YAMLs nuevos; elimina `is_pk`/`is_fk` de la leyenda
+- `scripts/profile_layer.py` — ya no genera `is_pk: false` / `is_fk: false` en stubs
+- `scripts/build_er_model.py` — nodo muestra tipo de fuente legible en vez del dict crudo
+- `Makefile` — `make help` documenta el flujo completo de curado con 5 pasos
+- Todos los YAMLs existentes — `is_pk`/`is_fk` eliminados de columnas y leyendas; bloque de comentario agregado en `relations:`
+
+### Decisiones tomadas
+
+| Decisión | Razonamiento |
+|---|---|
+| `is_pk` / `is_fk` eliminados | Ningún script los leía; `is_fk` redundante con `tags: [fk]` |
+| `CENSO2024_V2_gdb` / `COMUNA_DPA_INDICADORES` | Tabla analítica con indicadores, nombrada con DPA, directamente joinable |
+| Manzanas para después | 216K filas y 216 columnas — scope separado, no bloquea lo actual |
+
+### Próximos pasos
+
+- [ ] Curar `Manzanas_CPV24` (`Censo2024_v2`) — nivel manzana, 216K registros, 216 columnas
+- [ ] Correr `make scrape` para `establecimientos_educacion` (ID: 35408)
+- [ ] Definir `use_cases:` en capas verificadas
+- [ ] Decidir si `linea_digital` entra al catálogo o se descarta
+- [ ] Empezar backend FastAPI
+
+---
+
 ## Sesión 2026-05-13 (tarde)
 
 ### Qué se discutió

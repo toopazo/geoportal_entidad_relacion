@@ -1,11 +1,11 @@
 # ==============================================================================
 # Capa: Resultados Censo de Población y Vivienda 2024
-# Generado automáticamente por scrape_catalog.py — 2026-05-13
+# Generado automáticamente por scrape_catalog.py — 2026-05-15
 # ==============================================================================
 
 id: resultados_censo_de_poblacion_y_vivienda_2024
-schema_status: pending_verification   # verified | pending_verification | outdated
-last_reviewed: "2026-05-13"
+schema_status: verified   # verified | pending_verification | outdated
+last_reviewed: "2026-05-15"
 schema_hash: null         # rellenado por check_schema_drift.py en primer run
 
 # ------------------------------------------------------------------------------
@@ -51,9 +51,11 @@ catalog:
 # ------------------------------------------------------------------------------
 source:
   type: arcgis_rest
-  _status: pendiente — completar manualmente
-geometry_type: null
-feature_count: null
+  service_url: https://services5.arcgis.com/hUyD8u3TeZLKPe4T/arcgis/rest/services/CENSO2024_V2_gdb/FeatureServer
+  layer_id: 0
+  layer_name: COMUNA_DPA_INDICADORES
+geometry_type: polygon
+feature_count: 346
 
 # ------------------------------------------------------------------------------
 # Para qué sirve esta capa — completar manualmente
@@ -62,15 +64,551 @@ use_cases: []
 
 # ------------------------------------------------------------------------------
 # Relaciones con otras capas — completar manualmente
+#
+# Formato:
+#   - target: <id del YAML de destino, ej: division_politica_administrativa_2023>
+#     join_on: <columna_esta_tabla> = <columna_otra_tabla>
+#     join_type: one_to_one | one_to_many | many_to_one
+#
+# Ejemplo (esta tabla → DPA 2023 vía CUT comunal):
+#   - target: division_politica_administrativa_2023
+#     join_on: CUT = CUT_COM
+#     join_type: one_to_one
 # ------------------------------------------------------------------------------
-relations: []
+relations:
+  - target: division_politica_administrativa_2023
+    join_on: CUT = CUT_COM
+    join_type: one_to_one
+  - target: establecimientos_de_salud_de_chile_febrero_2026
+    join_on: CUT = cut_comuna
+    join_type: one_to_many
 
 # ------------------------------------------------------------------------------
 # Columnas — completar durante el curado
 # Leyenda:
-#   is_pk: identifica unívocamente cada registro en esta tabla
-#   is_fk: es una clave foránea hacia otra tabla
-#   fk_target: tabla.columna de destino del JOIN
 #   truncated: nombre cortado por límite shapefile (10 chars)
+#   tags (vocabulario controlado):
+#     relevante  — columna con valor analítico, candidata a mostrar en frontend
+#     fk         — clave foránea para JOIN con otra capa
+#     geografica — coordenada o geometría espacial
 # ------------------------------------------------------------------------------
-columns: {}
+columns:
+
+  OBJECTID:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 1
+      - 2
+      - 3
+    human_description: ""
+    tags: []
+    arcgis_description: null
+    llm_description: Identificador numérico único de cada registro en la capa de datos.
+
+  CUT:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 1101
+      - 1107
+      - 1401
+    human_description: ""
+    tags: [fk]
+    arcgis_description: null
+    llm_description: "Código Único Territorial, identifica la división político-administrativa (comuna) del país."
+
+  REGION:
+    type: string
+    null_pct: 0.0
+    distinct_count: 6
+    known_values:
+      - REGIÓN DE ANTOFAGASTA
+      - REGIÓN DE ATACAMA
+      - REGIÓN DE COQUIMBO
+      - "REGIÓN DEL LIBERTADOR GENERAL BERNARDO O'HIGGINS"
+      - REGIÓN DE TARAPACÁ
+      - REGIÓN DE VALPARAÍSO
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: null
+    llm_description: "Nombre oficial de la región según la división político-administrativa de Chile."
+
+  PROVINCIA:
+    type: string
+    null_pct: 0.0
+    distinct_count: 21
+    examples:
+      - IQUIQUE
+      - IQUIQUE
+      - DEL TAMARUGAL
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: null
+    llm_description: Nombre oficial de la provincia a la que pertenece la unidad geográfica.
+
+  COMUNA:
+    type: string
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - IQUIQUE
+      - ALTO HOSPICIO
+      - POZO ALMONTE
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: null
+    llm_description: Nombre oficial de la comuna correspondiente a la unidad geográfica representada.
+
+  ID_UNICO:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 1101
+      - 1107
+      - 1401
+    human_description: ""
+    tags: []
+    arcgis_description: null
+    llm_description: Identificador único que coincide con el código CUT para relacionar la unidad geográfica.
+
+  DPA:
+    type: string
+    null_pct: 0.0
+    distinct_count: 6
+    known_values:
+      - ANTOFAGASTA
+      - ATACAMA
+      - COQUIMBO
+      - "LIBERTADOR GENERAL BERNARDO O'HIGGINS"
+      - TARAPACÁ
+      - VALPARAÍSO
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: null
+    llm_description: "Nombre de la región sin el prefijo 'Región de', utilizado como identificador alternativo."
+
+  ORDEN_1:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 22
+      - 23
+      - 24
+    human_description: ""
+    tags: []
+    arcgis_description: ORDEN
+    llm_description: Número de orden geográfico o secuencial para organizar las unidades territoriales.
+
+  Ind_001_TViv:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 75372
+      - 46573
+      - 11604
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Viviendas censadas
+    llm_description: "Total de viviendas censadas en la unidad geográfica, incluyendo todos los tipos."
+
+  Ind_002_THog:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 69800
+      - 42150
+      - 5609
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Hogares censados
+    llm_description: Total de hogares particulares censados en la unidad geográfica.
+
+  Ind_003_Por_Hog_U:
+    type: int
+    null_pct: 0.0
+    distinct_count: 21
+    examples:
+      - 24
+      - 15
+      - 26
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Porcentaje Hogares Unipersonales
+    llm_description: Porcentaje de hogares unipersonales (compuestos por una sola persona) respecto al total de hogares.
+
+  Ind_004_Pr_Per_Hog:
+    type: float
+    null_pct: 0.0
+    distinct_count: 10
+    known_values:
+      - 2.3
+      - 2.4
+      - 2.5
+      - 2.6
+      - 2.7
+      - 2.8
+      - 2.9
+      - 3.0
+      - 3.1
+      - 3.3
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Promedio de personas por hogar
+    llm_description: Promedio de personas por hogar en la unidad geográfica.
+
+  Ind_005_TPob:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 199587
+      - 142086
+      - 16878
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Población censada
+    llm_description: Total de población censada en la unidad geográfica.
+
+  Ind_006_THom:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 98413
+      - 70649
+      - 8667
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Hombres
+    llm_description: Total de hombres censados en la unidad geográfica.
+
+  Ind_007_TMuj:
+    type: int
+    null_pct: 0.0
+    distinct_count: 98
+    examples:
+      - 101174
+      - 71437
+      - 8211
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Mujeres
+    llm_description: Total de mujeres censadas en la unidad geográfica.
+
+  Ind_008_In_Env:
+    type: float
+    null_pct: 0.0
+    distinct_count: 95
+    examples:
+      - 64.4
+      - 21.3
+      - 42.2
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Índice de envejecimiento
+    llm_description: "Índice de envejecimiento, que relaciona la población de 65 años o más con la población de 0 a 14 años."
+
+  Ind_009_VC:
+    type: int
+    null_pct: 0.0
+    distinct_count: 32
+    examples:
+      - 46
+      - 15
+      - 11
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: V. Colectivas
+    llm_description: "Número de viviendas colectivas (como cárceles, hospitales, residencias) censadas en la unidad geográfica."
+
+  Ind_0010_VPO:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 68763
+      - 43731
+      - 5506
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Ocupadas
+    llm_description: Número de viviendas particulares ocupadas (con moradores presentes) en la unidad geográfica.
+
+  Ind_0011_VPD:
+    type: int
+    null_pct: 0.0
+    distinct_count: 99
+    examples:
+      - 6563
+      - 2827
+      - 6087
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Desocupadas
+    llm_description: Número de viviendas particulares desocupadas (sin moradores presentes) en la unidad geográfica.
+
+  Ind_0012_Pr_Hog_V:
+    type: float
+    null_pct: 0.0
+    distinct_count: 2
+    known_values:
+      - 1.0
+      - 1.1
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Promedio Hogares por Vivienda
+    llm_description: Promedio de hogares por vivienda particular ocupada en la unidad geográfica.
+
+  Ind_0013_Por_Hog_Nin:
+    type: float
+    null_pct: 0.0
+    distinct_count: 70
+    examples:
+      - 35.5
+      - 50.7
+      - 41.0
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Porcentaje de Hogares con Niños/as
+    llm_description: Porcentaje de hogares con presencia de niños o niñas (menores de 15 años) respecto al total de hogares.
+
+  Ind_0014_Por_Hog_May:
+    type: float
+    null_pct: 0.0
+    distinct_count: 73
+    examples:
+      - 8.3
+      - 3.8
+      - 11.4
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Porcentaje de Hogares de Personas Mayores
+    llm_description: Porcentaje de hogares con presencia de personas mayores (65 años o más) respecto al total de hogares.
+
+  Ind_0015_Raz_H_M:
+    type: float
+    null_pct: 0.0
+    distinct_count: 69
+    examples:
+      - 97.3
+      - 98.9
+      - 105.6
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Razón Hombre Mujer
+    llm_description: "Razón de masculinidad, número de hombres por cada 100 mujeres en la población censada."
+
+  Ind_0016_Pr_Ed:
+    type: float
+    null_pct: 0.0
+    distinct_count: 59
+    examples:
+      - 36.5
+      - 30.4
+      - 33.3
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Promedio de Edad
+    llm_description: Promedio de edad de la población censada en la unidad geográfica.
+
+  Ind_0017_G_0_14:
+    type: string
+    null_pct: 0.0
+    distinct_count: 1
+    known_values:
+      - 0 a 14 años
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: 0 a 14 años
+    llm_description: "Indicador textual que define el grupo etario de 0 a 14 años ('0 a 14 años')."
+
+  Ind_0018_Pob_0_14:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 37595
+      - 36164
+      - 4053
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Años Total 0 a 14 años
+    llm_description: Población censada en el grupo etario de 0 a 14 años de edad.
+
+  Ind_0019_G_15_64:
+    type: string
+    null_pct: 0.0
+    distinct_count: 1
+    known_values:
+      - 15 a 64 años
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: 15 a 64 años
+    llm_description: "Indicador textual que define el grupo etario de 15 a 64 años ('15 a 64 años')."
+
+  Ind_0020_Pob_15_64:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 137764
+      - 98216
+      - 11116
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Años Total 15 a 64 años
+    llm_description: Población censada en el grupo etario de 15 a 64 años de edad.
+
+  Ind_0021_G_65_mas:
+    type: string
+    null_pct: 0.0
+    distinct_count: 1
+    known_values:
+      - 65 años o más
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: 65 años o más
+    llm_description: "Indicador textual que define el grupo etario de 65 años o más ('65 años o más')."
+
+  Ind_0022_Pob_65_mas:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 24228
+      - 7706
+      - 1709
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Años Total 65 años o más
+    llm_description: Población censada en el grupo etario de 65 años o más de edad.
+
+  Ind_0023_Por_Hom:
+    type: float
+    null_pct: 0.0
+    distinct_count: 38
+    examples:
+      - 49.3
+      - 49.7
+      - 51.4
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Porcentaje Población por Sexo Hombre
+    llm_description: Porcentaje de hombres respecto al total de la población censada en la unidad geográfica.
+
+  Ind_0024_Por_Muj:
+    type: float
+    null_pct: 0.0
+    distinct_count: 38
+    examples:
+      - 50.7
+      - 50.3
+      - 48.6
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Porcentaje Población por Sexo Mujer
+    llm_description: Porcentaje de mujeres respecto al total de la población censada en la unidad geográfica.
+
+  Ind_0025_Por_P_0_14:
+    type: float
+    null_pct: 0.0
+    distinct_count: 59
+    examples:
+      - 18.8
+      - 25.5
+      - 24.0
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Porcentaje Grupos de Edad 0 a 14
+    llm_description: Porcentaje de la población censada en el grupo etario de 0 a 14 años respecto al total de población.
+
+  Ind_0026_Por_P_15_64:
+    type: int
+    null_pct: 0.0
+    distinct_count: 14
+    known_values:
+      - 57
+      - 59
+      - 60
+      - 61
+      - 62
+      - 63
+      - 64
+      - 65
+      - 66
+      - 67
+      - 68
+      - 69
+      - 70
+      - 71
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Porcentaje Grupos de Edad 15 a 64
+    llm_description: Porcentaje de la población censada en el grupo etario de 15 a 64 años respecto al total de población.
+
+  Ind_0027_Por_P_65_mas:
+    type: float
+    null_pct: 0.0
+    distinct_count: 71
+    examples:
+      - 12.1
+      - 5.4
+      - 10.1
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: Porcentaje Grupos de Edad 65 o más
+    llm_description: Porcentaje de la población censada en el grupo etario de 65 años o más respecto al total de población.
+
+  Ind_0028_VP:
+    type: int
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 75326
+      - 46558
+      - 11593
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: V. Particulares
+    llm_description: Total de viviendas particulares censadas (ocupadas y desocupadas) en la unidad geográfica.
+
+  Shape__Area:
+    type: float
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 2636810936.3359375
+      - 655180677.5996094
+      - 15841967015.759766
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: null
+    llm_description: Área de la superficie del polígono que representa la unidad geográfica en metros cuadrados.
+
+  Shape__Length:
+    type: float
+    null_pct: 0.0
+    distinct_count: 100
+    examples:
+      - 441292.5092810244
+      - 110014.5730062991
+      - 770540.4971251612
+    human_description: ""
+    tags: [relevante]
+    arcgis_description: null
+    llm_description: Perímetro del polígono que representa la unidad geográfica en metros.
+
+  geom:
+    type: geometry
+    notes: "Columna espacial PostGIS. Usar ST_AsText(geom) para ver coordenadas."
+    human_description: ""
+    tags: [geografica]
+    arcgis_description: null
+    llm_description: null

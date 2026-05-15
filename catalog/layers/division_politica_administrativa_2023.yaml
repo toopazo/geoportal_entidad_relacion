@@ -81,15 +81,22 @@ use_cases: []
 
 # ------------------------------------------------------------------------------
 # Relaciones con otras capas — completar manualmente
+#
+# Formato:
+#   - target: <id del YAML de destino, ej: division_politica_administrativa_2023>
+#     join_on: <columna_esta_tabla> = <columna_otra_tabla>
+#     join_type: one_to_one | one_to_many | many_to_one
+#
+# Ejemplo (otra tabla → esta vía CUT de comuna):
+#   - target: resultados_censo_de_poblacion_y_vivienda_2024
+#     join_on: CUT_COM = CUT
+#     join_type: one_to_one
 # ------------------------------------------------------------------------------
 relations: []
 
 # ------------------------------------------------------------------------------
 # Columnas — completar durante el curado
 # Leyenda:
-#   is_pk: identifica unívocamente cada registro en esta tabla
-#   is_fk: es una clave foránea hacia otra tabla
-#   fk_target: tabla.columna de destino del JOIN
 #   truncated: nombre cortado por límite shapefile (10 chars)
 #   tags (vocabulario controlado):
 #     relevante  — columna con valor analítico, candidata a mostrar en frontend
@@ -123,8 +130,6 @@ columns:
     tags: [fk]
     arcgis_description: null
     llm_description: "Código único territorial de la región de Chile, compuesto por dos dígitos, donde cada valor numérico representa una región específica del país."
-    is_pk: false
-    is_fk: false
 
   CUT_PROV:
     type: string
@@ -138,8 +143,6 @@ columns:
     tags: [fk]
     arcgis_description: null
     llm_description: "Código único territorial de la provincia, compuesto por tres dígitos, que permite identificar cada provincia dentro de su respectiva región."
-    is_pk: false
-    is_fk: false
 
   CUT_COM:
     type: string
@@ -153,8 +156,6 @@ columns:
     tags: [fk]
     arcgis_description: null
     llm_description: "Código único territorial de la comuna, compuesto por cinco dígitos, que identifica de manera exclusiva cada comuna a nivel nacional."
-    is_pk: true
-    is_fk: false
 
   REGION:
     type: string
@@ -181,8 +182,6 @@ columns:
     tags: [relevante]
     arcgis_description: null
     llm_description: "Nombre oficial de la región, correspondiente a una de las dieciséis entidades territoriales de primer orden en que se divide administrativamente Chile."
-    is_pk: false
-    is_fk: false
 
   PROVINCIA:
     type: string
@@ -196,8 +195,6 @@ columns:
     tags: [relevante]
     arcgis_description: null
     llm_description: "Nombre oficial de la provincia, correspondiente a la subdivisión administrativa de segundo orden dentro de la región."
-    is_pk: false
-    is_fk: false
 
   COMUNA:
     type: string
@@ -211,8 +208,6 @@ columns:
     tags: [relevante]
     arcgis_description: null
     llm_description: "Nombre oficial de la comuna, correspondiente a la unidad administrativa de tercer orden y la más pequeña dentro de la división político-administrativa de Chile."
-    is_pk: false
-    is_fk: false
 
   SUPERFICIE:
     type: float
@@ -226,8 +221,6 @@ columns:
     tags: [relevante]
     arcgis_description: null
     llm_description: "Área del polígono en kilómetros cuadrados, calculada en el sistema de referencia SIRGAS Chile a escala 1:50.000."
-    is_pk: false
-    is_fk: false
 
   geom:
     type: geometry
