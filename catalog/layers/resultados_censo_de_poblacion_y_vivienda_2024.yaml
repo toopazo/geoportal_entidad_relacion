@@ -66,22 +66,46 @@ use_cases: []
 # Relaciones con otras capas — completar manualmente
 #
 # Formato:
-#   - target: <id del YAML de destino, ej: division_politica_administrativa_2023>
-#     join_on: <columna_esta_tabla> = <columna_otra_tabla>
-#     join_type: one_to_one | one_to_many | many_to_one
+#   - target: <id del YAML de destino>
+#     join_on: <col_esta_tabla> = <col_otra_tabla>
+#     join_type: one_to_one | one_to_many | many_to_one | many_to_many
+#     join_transform:            # opcional — cuando las claves tienen formato distinto
+#       src: <transform>         # aplicar a la columna de ESTA tabla antes del join
+#       tgt: <transform>         # aplicar a la columna de la tabla DESTINO
+#     join_transform_note: >     # explicación en lenguaje humano del por qué
 #
-# Ejemplo (esta tabla → DPA 2023 vía CUT comunal):
-#   - target: division_politica_administrativa_2023
-#     join_on: CUT = CUT_COM
-#     join_type: one_to_one
+# Transforms disponibles:
+#   zfill:N  → zero-pad a N dígitos (ej: "1101" → "01101" con zfill:5)
+#   null     → sin transformación
+#
 # ------------------------------------------------------------------------------
 relations:
   - target: division_politica_administrativa_2023
     join_on: CUT = CUT_COM
     join_type: one_to_one
+    join_transform:
+      src: "zfill:5"
+      tgt: null
+    join_transform_note: >
+      INE almacena CUT como entero en ArcGIS (ej: 1101). SUBDERE lo almacena
+      como string con cero inicial (ej: 01101). Sin este transform el join
+      produce 0 resultados sin ningún error ni advertencia.
+    join_exceptions:
+      - value: "12202"
+        note: >
+          Comuna Antártica — excluida de DPA 2023 por restricciones DIFROL.
+          El Censo 2024 la incluye (346 comunas), pero DPA no tiene su polígono
+          (345 comunas). Ver resumen de DPA: "No se considera el polígono
+          correspondiente a la comuna Antártica".
   - target: establecimientos_de_salud_de_chile_febrero_2026
     join_on: CUT = cut_comuna
     join_type: one_to_many
+    join_transform:
+      src: "zfill:5"
+      tgt: null
+    join_transform_note: >
+      Mismo problema que con DPA: CUT en ArcGIS (censo) es entero sin cero
+      inicial; cut_comuna en WFS (salud) es string con cero inicial.
 
 # ------------------------------------------------------------------------------
 # Columnas — completar durante el curado

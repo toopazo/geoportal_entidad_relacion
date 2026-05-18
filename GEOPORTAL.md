@@ -7,6 +7,7 @@
 
 ## Índice
 
+0. [Propuesta de valor del proyecto](#0-propuesta-de-valor-del-proyecto)
 1. [Visión de alto nivel: ¿Qué es un GIS y qué es el geoportal?](#1-visión-de-alto-nivel-qué-es-un-gis-y-qué-es-el-geoportal)
 2. [Stack tecnológico del geoportal](#2-stack-tecnológico-del-geoportal)
 3. [Operaciones WFS fundamentales](#3-operaciones-wfs-fundamentales-con-ejemplos-reales)
@@ -20,6 +21,62 @@
 11. [Flujo de curado de una capa](#11-flujo-de-curado-de-una-capa)
 12. [Checklist para sesión de trabajo](#12-checklist-para-sesión-de-trabajo-con-el-geoportal)
 13. [URLs de referencia](#13-urls-de-referencia)
+
+---
+
+## 0. Propuesta de valor del proyecto
+
+> Esta sección captura el **por qué** del proyecto. Leer antes de agregar cualquier capa o relación.
+
+El geoportal.cl publica decenas de capas de datos del Estado de Chile. El problema no es que los datos no existan — es que **no se pueden usar directamente**: las relaciones entre capas no están documentadas, y cuando se intentan construir, aparecen bugs de formato que impiden los joins.
+
+Este proyecto entrega valor en dos pasos que se aplican en ese orden:
+
+### Paso 1 — Identificar y VALIDAR relaciones entre capas
+
+El geoportal no dice que la capa de Salud se puede cruzar con el Censo 2024 por CUT de comuna. Tampoco dice que esa relación es `many_to_one`. Eso hay que descubrirlo, declararlo en el YAML, y **validarlo contra el 100% de los datos reales** con `make build-er`.
+
+Una relación solo obtiene luz verde si:
+- Cada FK en la tabla origen existe en la tabla destino (integridad referencial)
+- La cardinalidad declarada (`many_to_one`, `one_to_one`, etc.) se cumple en los datos
+
+Esto produce conocimiento que no existe en ningún otro lugar: saber con certeza que un join funciona, antes de que el usuario lo intente.
+
+### Paso 2 — Corregir errores, bugs u omisiones que bloquean el Paso 1
+
+Durante la validación del Paso 1 aparecen incompatibilidades entre fuentes. Estas no son errores del proyecto — son bugs de los datos originales que el proyecto documenta y resuelve.
+
+**Ejemplo concreto — el bug del CUT (descubierto 2026-05-17):**
+
+El Código Único Territorial (CUT) es la clave foránea universal del Estado de Chile. Debería ser el pegamento que une todas las capas. Sin embargo:
+
+| Fuente | Tipo de campo | Valor ejemplo | Protocolo |
+|---|---|---|---|
+| INE — Censo 2024 | Entero (ArcGIS `esriFieldTypeInteger`) | `1101` | ArcGIS REST |
+| SUBDERE — DPA 2023 | String | `"01101"` | Shapefile |
+| MINSAL — Salud 2026 | String | `"01101"` | WFS |
+
+El CUT en ArcGIS se almacena como entero, perdiendo el cero inicial. Al intentar joinear Censo con DPA o Salud, el join silenciosamente falla: `"1101" ≠ "01101"`. Un analista que intente cruzar estas capas en SQL sin saber esto obtendrá 0 resultados y no entenderá por qué.
+
+La corrección se documenta en el YAML de la relación como `join_transform`:
+
+```yaml
+relations:
+  - target: division_politica_administrativa_2023
+    join_on: CUT = CUT_COM
+    join_type: one_to_one
+    join_transform:
+      src: "zfill:5"   # CUT en ArcGIS es entero → zero-pad a 5 dígitos
+      tgt: null        # CUT_COM en DPA ya viene con cero inicial
+```
+
+El backend FastAPI aplica este transform internamente. El usuario final (secretaria, analista, arquitecto no informático) nunca ve el problema — simplemente recibe los datos joineados y correctos.
+
+### Por qué no somos una copia del geoportal
+
+No almacenamos ni republicamos los datos. El backend actúa como **proxy inteligente**: consulta las fuentes originales en tiempo real (WFS vivo, ArcGIS vivo), aplica los transforms documentados en los YAMLs, ejecuta el join, y devuelve el resultado. La fuente oficial siempre está citada. Los datos siempre son frescos.
+
+Lo que aportamos es el **conocimiento curado**: qué capas se pueden joinear, con qué columna, con qué transformación, y con garantía de que funciona verificada contra el 100% de los datos.
 
 ---
 
@@ -561,7 +618,31 @@ La capa de establecimientos tiene ~5.181 registros. El servidor los devuelve tod
 &count=1000&startIndex=1000
 ```
 
-### 8.8 DEIS vs geoportal: actualización asincrónica
+### 8.9 CUT como entero en ArcGIS: join silencioso que falla
+
+**Descubierto:** 2026-05-17, durante validación automática con `make build-er`.
+
+El Censo 2024 (INE, vía ArcGIS REST) almacena el campo `CUT` como `esriFieldTypeInteger`. Al convertirlo a string para comparar, el cero inicial se pierde: `01101 → "1101"`. DPA 2023 (SUBDERE, shapefile) y Salud 2026 (MINSAL, WFS) almacenan el mismo código como string `"01101"`.
+
+Resultado: un `JOIN censo ON dpa USING (CUT = CUT_COM)` en SQL puro produce 0 filas, sin error ni advertencia. El problema es completamente silencioso.
+
+**Corrección requerida en SQL:**
+```sql
+-- No funciona:
+JOIN dpa ON censo."CUT" = dpa."CUT_COM"
+
+-- Funciona:
+JOIN dpa ON LPAD(censo."CUT"::TEXT, 5, '0') = dpa."CUT_COM"
+```
+
+**Corrección requerida en Python:**
+```python
+censo_cut = str(cut_value).zfill(5)   # "1101" → "01101"
+```
+
+Este transform está documentado en el campo `join_transform` del YAML de la relación y es aplicado automáticamente por el backend FastAPI. Ver sección 0 para contexto.
+
+### 8.10 DEIS vs geoportal: actualización asincrónica
 El geoportal publica snapshots (diciembre 2025, febrero 2026), no datos en tiempo real. El DEIS actualiza sus datos con periodicidad mensual/anual. Al cruzar datos de producción (REM) con el mapa del geoportal, verificar que los `cod_vig` correspondan al mismo período.
 
 ---

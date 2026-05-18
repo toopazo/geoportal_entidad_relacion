@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-15T20:17:05.447227+00:00",
+  "generated_at": "2026-05-18T02:43:30.790595+00:00",
   "nodes": [
     {
       "id": "division_politica_administrativa_2023",
@@ -75,35 +75,94 @@
       "to": "division_politica_administrativa_2023",
       "join_on": "cut_comuna = CUT_COM",
       "join_type": "many_to_one",
-      "description": ""
-    },
-    {
-      "from": "establecimientos_de_salud_de_chile_febrero_2026",
-      "to": "division_politica_administrativa_2023",
-      "join_on": "cut_provin = CUT_PROV",
-      "join_type": "many_to_one",
-      "description": ""
-    },
-    {
-      "from": "establecimientos_de_salud_de_chile_febrero_2026",
-      "to": "division_politica_administrativa_2023",
-      "join_on": "cut_region = CUT_REG",
-      "join_type": "many_to_one",
-      "description": ""
+      "description": "",
+      "join_transform": {
+        "src": null,
+        "tgt": null
+      },
+      "join_transform_note": "",
+      "join_exceptions": [],
+      "verification_status": "pass",
+      "verification_date": "2026-05-18T02:43:30.790549+00:00",
+      "verification_details": {
+        "src_col": "cut_comuna",
+        "tgt_col": "CUT_COM",
+        "src_distinct_count": 344,
+        "src_total": 5159,
+        "tgt_distinct_count": 345,
+        "tgt_total": 345,
+        "join_transform": {
+          "src": null,
+          "tgt": null
+        },
+        "orphaned_src_keys": [],
+        "tgt_col_unique": true
+      }
     },
     {
       "from": "resultados_censo_de_poblacion_y_vivienda_2024",
       "to": "division_politica_administrativa_2023",
       "join_on": "CUT = CUT_COM",
       "join_type": "one_to_one",
-      "description": ""
+      "description": "",
+      "join_transform": {
+        "src": "zfill:5",
+        "tgt": null
+      },
+      "join_transform_note": "INE almacena CUT como entero en ArcGIS (ej: 1101). SUBDERE lo almacena como string con cero inicial (ej: 01101). Sin este transform el join produce 0 resultados sin ningún error ni advertencia.\n",
+      "join_exceptions": [
+        "12202"
+      ],
+      "verification_status": "pass",
+      "verification_date": "2026-05-18T02:43:30.790549+00:00",
+      "verification_details": {
+        "src_col": "CUT",
+        "tgt_col": "CUT_COM",
+        "src_distinct_count": 346,
+        "src_total": 346,
+        "tgt_distinct_count": 345,
+        "tgt_total": 345,
+        "join_transform": {
+          "src": "zfill:5",
+          "tgt": null
+        },
+        "orphaned_src_keys": [],
+        "orphaned_tgt_keys": [],
+        "src_col_unique": true,
+        "tgt_col_unique": true,
+        "known_exceptions_applied": [
+          "12202"
+        ]
+      }
     },
     {
       "from": "resultados_censo_de_poblacion_y_vivienda_2024",
       "to": "establecimientos_de_salud_de_chile_febrero_2026",
       "join_on": "CUT = cut_comuna",
       "join_type": "one_to_many",
-      "description": ""
+      "description": "",
+      "join_transform": {
+        "src": "zfill:5",
+        "tgt": null
+      },
+      "join_transform_note": "Mismo problema que con DPA: CUT en ArcGIS (censo) es entero sin cero inicial; cut_comuna en WFS (salud) es string con cero inicial.\n",
+      "join_exceptions": [],
+      "verification_status": "pass",
+      "verification_date": "2026-05-18T02:43:30.790549+00:00",
+      "verification_details": {
+        "src_col": "CUT",
+        "tgt_col": "cut_comuna",
+        "src_distinct_count": 346,
+        "src_total": 346,
+        "tgt_distinct_count": 344,
+        "tgt_total": 5159,
+        "join_transform": {
+          "src": "zfill:5",
+          "tgt": null
+        },
+        "orphaned_tgt_keys": [],
+        "src_col_unique": true
+      }
     }
   ]
 }

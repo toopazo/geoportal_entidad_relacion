@@ -5,3 +5,4 @@ __pycache__/
 .venv/
 .env
 catalog/samples/
+catalog/verification_cache/

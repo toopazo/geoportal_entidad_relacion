@@ -86,12 +86,6 @@ relations:
   - target: division_politica_administrativa_2023
     join_on: cut_comuna = CUT_COM
     join_type: many_to_one
-  - target: division_politica_administrativa_2023
-    join_on: cut_provin = CUT_PROV
-    join_type: many_to_one
-  - target: division_politica_administrativa_2023
-    join_on: cut_region = CUT_REG
-    join_type: many_to_one
 
 # ------------------------------------------------------------------------------
 # Columnas — completar durante el curado

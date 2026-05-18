@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geoportal Curado</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    body { padding-bottom: 4rem; }
+
+    #table-container {
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 55vh;
+      margin-top: 1rem;
+      font-size: 0.82rem;
+    }
+    table { border-collapse: collapse; white-space: nowrap; }
+    th { position: sticky; top: 0; background: var(--pico-table-border-color); z-index: 1; }
+    td, th { padding: 0.3rem 0.7rem; }
+
+    .tgt-col { background: #f0f7ff; color: #2471a3; }
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: 99px;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .badge-transform { background: #fef3cd; color: #856404; }
+    .badge-pass      { background: #d1e7dd; color: #0a3622; }
+
+    #join-meta { font-size: 0.85rem; color: var(--pico-muted-color); margin-top: 0.5rem; }
+    #status-bar { min-height: 1.5rem; font-size: 0.85rem; color: var(--pico-muted-color); }
+    .no-match-row { background: #fff3cd !important; }
+  </style>
+</head>
+<body>
+<main class="container">
+
+  <hgroup>
+    <h1>Geoportal Curado</h1>
+    <p>Datos del <a href="https://geoportal.cl" target="_blank">Geoportal IDE Chile</a>
+       con relaciones verificadas contra el 100% de los datos reales.
+       Los joins se ejecutan directamente sobre las fuentes vivas.</p>
+  </hgroup>
+
+  <!-- ── Selector ───────────────────────────────────────────────────────── -->
+  <article>
+    <header><strong>Seleccionar join</strong></header>
+
+    <div class="grid">
+      <label>
+        Join disponible
+        <select id="join-select"></select>
+      </label>
+      <label>
+        Límite de registros
+        <input type="number" id="limit-input" value="100" min="1" max="10000">
+        <small>Para el conjunto completo, aumentar o usar la API directamente.</small>
+      </label>
+    </div>
+
+    <div id="join-meta"></div>
+
+    <button id="fetch-btn" onclick="fetchJoin()">Obtener datos</button>
+  </article>
+
+  <!-- ── Resultados ─────────────────────────────────────────────────────── -->
+  <article id="results-section" style="display:none">
+    <header>
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem">
+        <span id="result-summary"></span>
+        <button class="secondary outline" style="padding:0.3rem 0.9rem"
+                onclick="downloadCSV()">⬇ Descargar CSV</button>
+      </div>
+    </header>
+    <div id="table-container">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <small id="table-note" style="color:var(--pico-muted-color)"></small>
+  </article>
+
+  <p id="status-bar"></p>
+
+</main>
+
+<script>
+// ── estado ─────────────────────────────────────────────────────────────────
+let currentData    = [];
+let currentColumns = [];
+let tgtPrefix      = '';
+
+// ── inicialización ─────────────────────────────────────────────────────────
+async function init() {
+  setStatus('Cargando joins disponibles…');
+  try {
+    const joins = await fetchJSON('/joins');
+    populateSelect(joins);
+    setStatus('');
+  } catch (e) {
+    setStatus('Error al conectar con la API: ' + e.message);
+  }
+}
+
+function populateSelect(joins) {
+  const sel = document.getElementById('join-select');
+  sel.innerHTML = '';
+  joins.forEach(j => {
+    const opt = document.createElement('option');
+    opt.value = JSON.stringify(j);
+    opt.text  = labelFor(j);
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', updateMeta);
+  updateMeta();
+}
+
+function labelFor(j) {
+  const src = humanize(j.src);
+  const tgt = humanize(j.tgt);
+  return `${src}  →  ${tgt}`;
+}
+
+function humanize(id) {
+  // "establecimientos_de_salud_de_chile_febrero_2026" → "Salud Feb 2026"
+  const words = id.split('_');
+  // Tomar palabras clave (no artículos/preposiciones)
+  const skip = new Set(['de','del','la','los','las','el','y','e','en']);
+  const key  = words.filter(w => !skip.has(w)).slice(0, 4).join(' ');
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+function updateMeta() {
+  const j = selectedJoin();
+  if (!j) return;
+  const badges = [];
+  if (j.has_transform) {
+    badges.push(`<span class="badge badge-transform">⚡ transform aplicado: ${j.transform?.src || ''}</span>`);
+  }
+  badges.push(`<span class="badge badge-pass">✓ verificado 100% datos</span>`);
+  document.getElementById('join-meta').innerHTML =
+    `<code>${j.join_on}</code> &nbsp;(${j.join_type}) &nbsp; ${badges.join(' ')}`;
+}
+
+function selectedJoin() {
+  const sel = document.getElementById('join-select');
+  return sel.value ? JSON.parse(sel.value) : null;
+}
+
+// ── fetch del join ─────────────────────────────────────────────────────────
+async function fetchJoin() {
+  const j     = selectedJoin();
+  const limit = document.getElementById('limit-input').value;
+  if (!j) return;
+
+  const btn = document.getElementById('fetch-btn');
+  btn.setAttribute('aria-busy', 'true');
+  btn.disabled = true;
+  document.getElementById('results-section').style.display = 'none';
+  setStatus('Consultando fuentes vivas de datos…');
+
+  try {
+    const url    = `${j.endpoint}?limit=${limit}`;
+    const result = await fetchJSON(url);
+    render(result);
+    setStatus('');
+  } catch (e) {
+    setStatus('Error: ' + e.message);
+  } finally {
+    btn.removeAttribute('aria-busy');
+    btn.disabled = false;
+  }
+}
+
+async function fetchJSON(url) {
+  const resp = await fetch(url);
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.detail || resp.statusText);
+  return data;
+}
+
+// ── render ─────────────────────────────────────────────────────────────────
+function render(result) {
+  const info = result.join_info;
+  const data = result.data;
+
+  currentData = data;
+  tgtPrefix   = info.tgt_col_prefix || '';
+
+  if (!data.length) {
+    setStatus('Sin resultados.');
+    return;
+  }
+
+  // Columnas: todas excepto _join_status (la mostramos solo si hay no-matches)
+  const hasNoMatch = data.some(r => r._join_status === 'no_match');
+  currentColumns   = Object.keys(data[0]).filter(c => c !== '_join_status');
+
+  // Resumen
+  let summary = `<strong>${info.matched.toLocaleString('es-CL')}</strong> registros joineados`;
+  if (info.unmatched > 0) summary += ` · <span style="color:orange">${info.unmatched} sin match</span>`;
+  summary += ` &nbsp;|&nbsp; fuente: ${info.total_src} filas · destino: ${info.total_tgt} filas`;
+  if (info.join_transform)
+    summary += ` &nbsp;<span class="badge badge-transform">transform: ${info.join_transform.src}</span>`;
+  if (info.known_exceptions?.length)
+    summary += ` &nbsp;<small title="${info.known_exceptions.join(', ')}">(${info.known_exceptions.length} excepción conocida)</small>`;
+  document.getElementById('result-summary').innerHTML = summary;
+
+  // Cabecera
+  const thead = document.getElementById('thead');
+  thead.innerHTML = '<tr>' + currentColumns.map(c => {
+    const isTgt = c.startsWith(tgtPrefix) && tgtPrefix;
+    return `<th${isTgt ? ' class="tgt-col"' : ''}>${c}</th>`;
+  }).join('') + '</tr>';
+
+  // Cuerpo (máx 500 filas en DOM)
+  const display = data.slice(0, 500);
+  const tbody   = document.getElementById('tbody');
+  tbody.innerHTML = display.map(row => {
+    const noMatch = row._join_status === 'no_match';
+    const cells   = currentColumns.map(c => {
+      const val  = row[c];
+      const isTgt = c.startsWith(tgtPrefix) && tgtPrefix;
+      const disp  = val === null || val === undefined ? '' :
+                    typeof val === 'object' ? JSON.stringify(val) : val;
+      return `<td${isTgt ? ' class="tgt-col"' : ''}>${escHtml(String(disp))}</td>`;
+    }).join('');
+    return `<tr${noMatch ? ' class="no-match-row"' : ''}>${cells}</tr>`;
+  }).join('');
+
+  const note = document.getElementById('table-note');
+  if (data.length > 500) {
+    note.textContent = `Mostrando 500 de ${data.length.toLocaleString('es-CL')} registros. Descarga el CSV para ver todos.`;
+  } else {
+    note.textContent = `${data.length.toLocaleString('es-CL')} registros mostrados.`;
+  }
+
+  document.getElementById('results-section').style.display = 'block';
+}
+
+// ── CSV ────────────────────────────────────────────────────────────────────
+function downloadCSV() {
+  if (!currentData.length) return;
+  const cols = currentColumns;
+  const rows = [cols.join(',')];
+  currentData.forEach(row => {
+    rows.push(cols.map(c => {
+      const val = row[c];
+      const s   = val === null || val === undefined ? '' :
+                  typeof val === 'object' ? JSON.stringify(val) : String(val);
+      return (s.includes(',') || s.includes('"') || s.includes('\n'))
+        ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(','));
+  });
+  const blob = new Blob(['﻿' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'geoportal_curado.csv';
+  a.click();
+}
+
+// ── utilidades ─────────────────────────────────────────────────────────────
+function setStatus(msg) {
+  document.getElementById('status-bar').textContent = msg;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── arranque ───────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

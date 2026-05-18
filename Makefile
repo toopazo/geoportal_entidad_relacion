@@ -51,6 +51,12 @@ schema-check: $(VENV)/.installed
 build-er: $(VENV)/.installed
 	$(PYTHON) scripts/build_er_model.py $(ARGS)
 
+# ── backend API ──────────────────────────────────────────────────────────────
+
+.PHONY: serve
+serve: $(VENV)/.installed
+	$(VENV)/bin/uvicorn api.main:app --reload --port 8000
+
 # ── scraping de catálogo ──────────────────────────────────────────────────────
 
 # Uso: make scrape URL=https://geoportal.cl/geoportal/catalog/...
