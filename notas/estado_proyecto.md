@@ -5,6 +5,135 @@
 
 ---
 
+## Sesión 2026-05-22
+
+### Qué se discutió
+
+**Decisión de rewrite completo.** Se decidió migrar el stack a tecnologías más profesionales:
+- Backend: Spring Boot 3.5 + Maven + Java 21 + Neon (PostgreSQL) via JPA → Render con Docker
+- Frontend: Next.js 15 + TypeScript + Tailwind CSS → Vercel
+
+**Arquitectura de tres repos.** Patrón "repo coordinador" (inspirado en `cline_test`):
+- `geoportal_entidad_relacion` — coordinador, Claude edita los otros dos via rutas absolutas
+- `geoportal-api` — `/home/toopazo/Dropbox/tomas/repos_git/geoportal-api/`
+- `geoportal-web` — `/home/toopazo/Dropbox/tomas/repos_git/geoportal-web/`
+
+**Corrección de permisos de Claude.** Se consolidaron las reglas de `.claude/settings.json`: `Bash(git *)`, `Bash(make *)`, docker acotado al contenedor postgres del proyecto, `Bash(cd *)` para cubrir comandos compuestos.
+
+### Qué se construyó
+
+**geoportal-api (Spring Boot 3.5) — API completa y funcionando:**
+- `CatalogService` — lee 4 YAMLs del catálogo con Jackson al arrancar, cachea en memoria
+- `WfsProxyService` — proxy a GeoServer usando URL workspace-específica (`/{workspace}/wfs`)
+- `ArcGisProxyService` — proxy a ArcGIS REST; usa `URI.create()` para evitar doble-encoding
+- `LayerService` — dispatch por `source.type` (wfs/arcgis_rest/static), filtro de columnas
+- `JoinService` — port de `do_join()` del FastAPI: left/inner, transforms zfill:N, joins directos e inversos
+- `DivisionPoliticaAdministrativa` entity + `DpaRepository` — JPA para DPA en Neon
+- `CorsConfig` — permite `localhost:3000` y `*.vercel.app`
+- `Dockerfile` multi-stage (maven:3.9 build + eclipse-temurin:21-jre run)
+- `application-local.properties` (gitignoreado) — credenciales Neon para desarrollo local
+
+**Neon (PostgreSQL):**
+- `division_politica_administrativa_2023` — 345 comunas cargadas via `tmp/load_dpa_to_neon.py`
+- Columnas en minúsculas (`cut_com`, `cut_reg`, etc.) para compatibilidad con Hibernate
+
+**geoportal-web (Next.js 15) — skeleton completo:**
+- `layout.tsx` — header global, fuente Geist, metadata en español
+- `page.tsx` — home: diagrama ER + selector de modo
+- `download/page.tsx` + `join/page.tsx` — páginas con estructura de wizard (steps pendientes)
+- `components/ErDiagram.tsx` — PNG con zoom modal
+- `components/ModeSelector.tsx` — 2 tarjetas con navegación
+- `components/ResultsTable.tsx` — tabla con overflow, max 500 filas, export CSV
+- `lib/api.ts` + `lib/types.ts` — cliente fetch tipado + interfaces TypeScript
+
+**Coordinator:**
+- `CLAUDE.md` — sección "Repos relacionados" con rutas absolutas de ambos repos
+- `.claude/settings.json` — permisos consolidados y corregidos
+- `tmp/load_dpa_to_neon.py` — script de migración DPA → Neon (ya ejecutado)
+
+### Estado de endpoints (geoportal-api)
+
+| Endpoint | Fuente | Estado |
+|---|---|---|
+| `GET /health` | — | ✅ |
+| `GET /api/catalog` | 4 YAMLs en memoria | ✅ |
+| `GET /api/joins` | Catálogo (6 pares ↔) | ✅ |
+| `GET /api/layers/establecimientos_salud` | WFS en vivo | ✅ |
+| `GET /api/layers/resultados_censo_2024` | ArcGIS en vivo | ✅ |
+| `GET /api/layers/division_politica_administrativa_2023` | Neon via JPA | ✅ |
+| `GET /api/joins/{src}/{tgt}` | Join en memoria + transforms | ✅ |
+
+### Decisiones tomadas
+
+| Decisión | Razonamiento |
+|---|---|
+| Dos repos separados (no monorepo) | Java y JS tienen toolchains incompatibles |
+| Patrón repo coordinador | Claude edita ambos en un mismo turno de conversación |
+| Maven (no Gradle) | Estándar de la industria, generado por Spring Initializr |
+| Tailwind CSS | Utility-first, integración nativa con Next.js |
+| Datos híbridos en Neon | DPA estática → JPA; Salud/Censo → proxy en tiempo real |
+| Columnas DPA en minúsculas en Neon | Hibernate normaliza identifiers a minúsculas al citar; mayúsculas en Neon causaban `column does not exist` |
+| `ddl-auto=none` + `globally_quoted_identifiers=true` | Evita validación y cita correctamente los nombres de columna |
+
+### Próximos pasos
+
+- [ ] Implementar wizards de Next.js — wizard descarga (Step1Layer, Step2Limit, Step3Columns, Step4Review)
+- [ ] Implementar wizard join (Step1Relation, Step2Direction, Step3Limit, Step4JoinType)
+- [ ] Conectar frontend con la API (`NEXT_PUBLIC_API_URL`)
+- [ ] Configurar deploy en Render (variables de entorno: NEON_DATABASE_URL, SPRING_DATASOURCE_*)
+- [ ] Configurar deploy en Vercel (variable NEXT_PUBLIC_API_URL apuntando a Render)
+- [ ] Cargar Censo 2024 en Neon si se quiere evitar dependencia de ArcGIS Online (opcional)
+
+---
+
+## Sesión 2026-05-20
+
+### Qué se discutió
+
+**Análisis del flujo de valor y HUs.** Se revisó el frontend mínimo existente e identificaron 5 historias de usuario con personas concretas: Valentina (periodista), Rodrigo (municipio Coquimbo), Mónica (SEREMI), Claudio (planificador). Se creó `notas/historias_usuario.md`.
+
+**Rediseño completo del frontend.** El frontend mínimo pasó a un wizard de 4 pasos usando `<details>/<summary>` como acordeón editable: cada paso completado se colapsa y es re-expandible sin perder el estado de los pasos siguientes.
+
+**Dos modos de uso.** Se agregó selector de modo: "Descargar tabla" (wizard propio de 4 pasos con selector de columnas) y "Relacionar tablas" (join wizard existente). Ambos comparten la sección de resultados.
+
+**Joins inversos automáticos.** El backend auto-genera la relación inversa de cada join declarado en los YAMLs. Salud→DPA genera DPA→Salud sin tocar ningún YAML. El usuario ve 3 pares `↔` en vez de 6 entradas independientes.
+
+**`join_mode` real (left/inner).** Antes el campo `join_type` del YAML era decorativo. Ahora `join_mode: left|inner` controla el comportamiento. El frontend lo expone con diagrama Venn + tabla de ejemplo.
+
+**Diagrama ER en el frontend.** El PNG del modelo ER aparece al inicio del sitio con zoom al hacer clic. Endpoints `/er-model.png` y `/er-model` (JSON) agregados al backend.
+
+**Mejoras al PNG del ER.** Se eliminó la fecha `[2026-05-18]` de las aristas. Cada nodo ahora muestra "Unión por: CUT_COM" con las columnas que participan en relaciones. Las aristas muestran el `join_on` limpio.
+
+**`make dev`.** Un solo comando levanta postgres, verifica que DPA esté cargada (la carga si no), y arranca uvicorn.
+
+### Qué se construyó
+
+- `frontend/index.html` — reescrito completamente: selector de modo, wizard descarga (4 pasos + selector de columnas), wizard join (4 pasos con left/inner visual), resultados compartidos, acordeón editable, nombres de archivo CSV con id del YAML
+- `api/main.py` — inversos automáticos de joins, `join_mode` como query param, `/er-model.png`, `/er-model`, `/layers/{id}` (descarga directa con filtro de columnas), `/catalog` ahora incluye columnas
+- `scripts/build_er_model.py` — "Unión por:" en nodos, fecha eliminada de aristas, función `_short_name` eliminada
+- `notas/historias_usuario.md` — 5 HUs con personas reales y criterios de aceptación
+- `Makefile` — target `make dev`
+
+### Decisiones tomadas
+
+| Decisión | Razonamiento |
+|---|---|
+| Inversos automáticos (no `right join`) | `right join` con límite pre-join es semánticamente roto; mejor exponer ambas direcciones como joins independientes |
+| `join_mode` separado de `join_type` | `join_type` describe cardinalidad (many_to_one); `join_mode` describe comportamiento (left/inner) — son conceptos distintos |
+| `<details>/<summary>` para wizard | Acordeón nativo del browser, editable sin reiniciar el flujo |
+| Dos modos en vez de un wizard unificado | Descargar una tabla y relacionar dos tienen UX distintos; un wizard unificado sería demasiado largo |
+
+### Próximos pasos
+
+- [ ] HU-02: Filtro geográfico pre-descarga (región/CUT) — mayor impacto para usuarios municipales
+- [ ] HU-03: Tooltips de columnas con `human_description` en la tabla de resultados
+- [ ] Curar `Manzanas_CPV24` — nivel manzana, 216K registros, 216 columnas
+- [ ] Correr `make scrape` para `establecimientos_educacion` (ID: 35408)
+- [ ] Definir `use_cases:` en capas verificadas
+- [ ] Decidir si `linea_digital` entra al catálogo o se descarta
+
+---
+
 ## Sesión 2026-05-15
 
 ### Qué se discutió
